@@ -61,10 +61,22 @@ public class PatchNavigationOverlay extends Overlay
 				return null;
 			}
 			net.runelite.api.TileObject ringObj = plugin.getNavRingObject();
-			Shape ringHull = ringObj == null ? null : ringObj.getClickbox();
-			if (ringHull == null && ringObj != null)
+			Shape ringHull = null;
+			if (ringObj != null)
 			{
-				ringHull = ringObj.getCanvasTilePoly();
+				try
+				{
+					ringHull = ringObj.getClickbox();
+					if (ringHull == null)
+					{
+						ringHull = ringObj.getCanvasTilePoly();
+					}
+				}
+				catch (RuntimeException ex)
+				{
+					// The object can be stale for a frame while the scene reloads.
+					ringHull = null;
+				}
 			}
 			if (ringHull != null)
 			{
@@ -73,7 +85,14 @@ public class PatchNavigationOverlay extends Overlay
 				graphics.setColor(color);
 				graphics.setStroke(new BasicStroke(2));
 				graphics.draw(ringHull);
-				lp = ringObj.getLocalLocation();
+				try
+				{
+					lp = ringObj.getLocalLocation();
+				}
+				catch (RuntimeException ignored)
+				{
+					// Keep the tile we already resolved from the world point.
+				}
 			}
 			else
 			{
@@ -99,21 +118,32 @@ public class PatchNavigationOverlay extends Overlay
 		// The real patch object (matched by its farming varbit), when it's loaded.
 		GameObject best = plugin.objectFor(next);
 
-		LocalPoint labelPoint;
+		LocalPoint labelPoint = null;
 		if (best != null)
 		{
 			// Some grown trees have no model outline: fall back to the click area, then the
 			// patch's floor area, so the patch is always marked.
-			Shape hull = best.getConvexHull();
-			if (hull == null)
+			Shape hull = null;
+			LocalPoint bestLocal = null;
+			try
 			{
-				hull = best.getClickbox();
+				hull = best.getConvexHull();
+				if (hull == null)
+				{
+					hull = best.getClickbox();
+				}
+				bestLocal = best.getLocalLocation();
+				if (hull == null)
+				{
+					int size = next.getType().patchSize();
+					hull = bestLocal == null ? null : Perspective.getCanvasTileAreaPoly(client, bestLocal, size);
+				}
 			}
-			if (hull == null)
+			catch (RuntimeException ex)
 			{
-				LocalPoint centre = best.getLocalLocation();
-				int size = next.getType().patchSize();
-				hull = centre == null ? null : Perspective.getCanvasTileAreaPoly(client, centre, size);
+				// The object can be stale for a frame while the scene reloads.
+				hull = null;
+				bestLocal = null;
 			}
 			if (hull != null)
 			{
@@ -123,9 +153,10 @@ public class PatchNavigationOverlay extends Overlay
 				graphics.setStroke(new BasicStroke(2));
 				graphics.draw(hull);
 			}
-			labelPoint = best.getLocalLocation();
+			labelPoint = bestLocal;
 		}
-		else
+
+		if (labelPoint == null)
 		{
 			labelPoint = LocalPoint.fromWorld(client, target);
 			if (labelPoint == null)
@@ -193,7 +224,20 @@ public class PatchNavigationOverlay extends Overlay
 		}
 		gardenerArrow = true;
 		Color gold = new Color(255, 200, 60);
-		Shape hull = npc.getConvexHull();
+		Shape hull = null;
+		LocalPoint lp = null;
+		int height = 0;
+		try
+		{
+			hull = npc.getConvexHull();
+			lp = npc.getLocalLocation();
+			height = npc.getLogicalHeight();
+		}
+		catch (RuntimeException ex)
+		{
+			// The NPC can be stale for a frame while the scene reloads.
+			return;
+		}
 		if (hull != null)
 		{
 			graphics.setColor(new Color(255, 200, 60, 40));
@@ -202,10 +246,9 @@ public class PatchNavigationOverlay extends Overlay
 			graphics.setStroke(new BasicStroke(2));
 			graphics.draw(hull);
 		}
-		LocalPoint lp = npc.getLocalLocation();
 		if (lp != null)
 		{
-			Point textLoc = Perspective.getCanvasTextLocation(client, graphics, lp, text, npc.getLogicalHeight() + 40);
+			Point textLoc = Perspective.getCanvasTextLocation(client, graphics, lp, text, height + 40);
 			if (textLoc != null)
 			{
 				OverlayUtil.renderTextLocation(graphics, textLoc, text, gold);

@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.16.0 (2026-11-22)
+- **"Farm run" bank view.** A small farming button in the bank's title bar opens a Bank Tags view with only the items this run still needs, so you don't have to hunt through the bank. Click it again to go back to the normal bank.
+- **Runes are planned the way the game lets you carry them.** The plugin now knows about:
+  - **the rune pouch** and the divine rune pouch, reading the runes inside from the game: three (or four) rune types share one inventory slot, and the list updates as you withdraw or deposit;
+  - **staves, battlestaves and tomes** that supply a rune for free, including combination staves such as the smoke, mist, dust, mud, lava and steam battlestaves, Kodai wand, twinflame staff and Bryophyta's staff;
+  - **combination runes** (dust, mist, mud, lava, steam, smoke, sunfire, aether), which count as both of their parts.
+  On a herb run the plugin leaves the weapon slot to your magic secateurs unless a staff is already equipped, so you don't lose the +10% yield for one saved slot.
+- **More honest "Take with you" list.** It shows what you're already carrying (for example "2/5 carried"), marks items that are only in the seed vault or at the tool leprechaun, and only asks you to withdraw what is still missing.
+- **Seed vault and tool leprechaun are counted.** Seeds in the Farming Guild's vault and tools, compost and plant cures at the leprechaun now count as owned, with a clear note saying where to collect them.
+- **Room for the harvest.** Bank stops now reserve inventory slots for the produce a leg will harvest (herbs, allotments, fruit, bushes, hops, cactus, calquat, celastrus), instead of planning 28/28 slots and leaving the fruit behind.
+- **Route order.** New setting: **Wiki order** (default), **Nearest first** (from where you stand), or **My order**. Each stop card has small up/down arrows; using them saves your own order and switches the run to it.
+- **Current step under your character.** A small box shows the action and item for the step you're on ("Add compost • Ultracompost", "Pay the gardener • Tomatoes(5)") without opening the sidebar. Turn it off with "Step under player" in Settings.
+- **Bank stops are walked to as well.** When the next thing on the route is a mid-run bank visit, the hint arrow, minimap arrow and Shortest Path line point at the bank, and the on-screen box says "Bank first".
+- **Reliability fixes:**
+  - a diseased patch now says "Plant cure" or "Prune with secateurs" instead of asking you to plant over it;
+  - a patch that is still growing is never given a second seed;
+  - planting one patch no longer forgets the compost and gardener payment for the patch you just planted;
+  - dead and stumped spirit trees no longer count against the "planted at once" limit and can be replaced;
+  - a hops-only run now brings a seed dibber, and a tree-only run with a diseased tree brings secateurs (or magic secateurs);
+  - logging into another account clears the previous character's inventory, equipment, quests, contract and step progress;
+  - finished stops no longer count towards the inventory slots for a bank stop;
+  - potato cactus timers use their own 10-minute growth tick;
+  - a new crop's timer no longer suppresses its own "ready" notification;
+  - the version in the build file now matches the version shown in the sidebar.
+
 ## 1.15.0 (2026-11-21)
 - **Herb profit now uses the OSRS Wiki's method.** Before, every herb was priced at a flat 8 herbs a patch (or your own average), minus the seed. Now each herb's expected yield is worked out the way the wiki's herb calculator does it:
   - **Harvest lives:** 3, plus 1, 2 or 3 for compost, supercompost or ultracompost (the bottomless bucket counts as ultracompost).

@@ -1,9 +1,6 @@
 package com.herbrunhelper;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import javax.inject.Inject;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
@@ -29,12 +26,6 @@ public class HerbRunBankOverlay extends WidgetItemOverlay
 		{
 			return;
 		}
-		Rectangle bounds = widgetItem.getCanvasBounds();
-		Color c = config.highlightColor();
-		graphics.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 60));
-		graphics.fill(bounds);
-		graphics.setColor(c);
-		graphics.setStroke(new BasicStroke(2));
-		graphics.draw(bounds);
+		HerbRunInventoryOverlay.marker(graphics, widgetItem.getCanvasBounds(), config.highlightColor());
 	}
 }

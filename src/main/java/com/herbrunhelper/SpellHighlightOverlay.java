@@ -5,8 +5,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.util.Map;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -15,9 +17,15 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 /** Outlines the teleport spell for your next stop in the spellbook (e.g. Falador Teleport). */
 class SpellHighlightOverlay extends Overlay
 {
-	/** The spellbook interface. */
-	private static final int SPELLBOOK_GROUP = 218;
-	private static final int MAX_CHILD = 250;
+	private static final Map<String, Integer> SPELLS = Map.of(
+		"Varrock Teleport", InterfaceID.MagicSpellbook.VARROCK_TELEPORT,
+		"Lumbridge Teleport", InterfaceID.MagicSpellbook.LUMBRIDGE_TELEPORT,
+		"Falador Teleport", InterfaceID.MagicSpellbook.FALADOR_TELEPORT,
+		"Camelot Teleport", InterfaceID.MagicSpellbook.CAMELOT_TELEPORT,
+		"Kourend Castle Teleport", InterfaceID.MagicSpellbook.KOUREND_TELEPORT,
+		"Ardougne Teleport", InterfaceID.MagicSpellbook.ARDOUGNE_TELEPORT,
+		"Trollheim Teleport", InterfaceID.MagicSpellbook.TROLLHEIM_TELEPORT,
+		"Civitas illa Fortis Teleport", InterfaceID.MagicSpellbook.FORTIS_TELEPORT);
 
 	private final Client client;
 	private final HerbRunPlugin plugin;
@@ -60,22 +68,15 @@ class SpellHighlightOverlay extends Overlay
 		return null;
 	}
 
-	/** The spell's icon in the open spellbook, found by its name (it moves between game updates). */
+	/** The spell's icon in the open spellbook, by the game's component id. */
 	private Widget findSpell(String spell)
 	{
-		for (int child = 0; child < MAX_CHILD; child++)
+		Integer component = SPELLS.get(spell);
+		if (component == null)
 		{
-			Widget w = client.getWidget(SPELLBOOK_GROUP, child);
-			if (w == null || w.isHidden())
-			{
-				continue;
-			}
-			String name = w.getName();
-			if (name != null && name.replaceAll("<[^>]*>", "").trim().equalsIgnoreCase(spell))
-			{
-				return w;
-			}
+			return null;
 		}
-		return null;
+		Widget w = client.getWidget(component);
+		return w == null || w.isHidden() ? null : w;
 	}
 }

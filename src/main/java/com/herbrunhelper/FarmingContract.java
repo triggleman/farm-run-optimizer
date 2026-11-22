@@ -1,5 +1,7 @@
 package com.herbrunhelper;
 
+import net.runelite.api.gameval.VarbitID;
+
 /**
  * Farming Guild contracts, read from the game's contract varbit. The numbers match RuneLite's
  * Time Tracking plugin (Produce.java, contractVarbitValue).
@@ -7,9 +9,9 @@ package com.herbrunhelper;
 public final class FarmingContract
 {
 	/** Varbit holding which crop the current contract is for (0 = no contract). */
-	public static final int TYPE_VARBIT = 7963;
+	public static final int TYPE_VARBIT = VarbitID.FARMGUILD_CONTRACT_TYPE;
 	/** Varbit that's set once the contract crop has been grown (go claim the reward). */
-	public static final int COMPLETE_VARBIT = 7961;
+	public static final int COMPLETE_VARBIT = VarbitID.FARMGUILD_CONTRACT_COMPLETE;
 
 	private static final String[] NAMES = new String[52];
 	private static final String[] PATCHES = new String[52];
@@ -112,36 +114,6 @@ public final class FarmingContract
 			return null;
 		}
 		return new FarmingContract(typeValue, completeValue > 0);
-	}
-
-	/** The Farming Guild patch the contract crop goes in, if it's one of the run's patch types. */
-	public FarmPatch guildPatch()
-	{
-		if (crop == null)
-		{
-			return null;
-		}
-		switch (crop.getType())
-		{
-			case HERB:
-				return FarmPatch.FARMING_GUILD_HERB;
-			case TREE:
-				return FarmPatch.FARMING_GUILD_TREE;
-			case FRUIT_TREE:
-				return FarmPatch.FARMING_GUILD_FRUIT;
-			case ALLOTMENT:
-				return FarmPatch.GUILD_ALLOTMENT_A;
-			case BUSH:
-				return FarmPatch.GUILD_BUSH;
-			case CACTUS:
-				return FarmPatch.GUILD_CACTUS;
-			case CELASTRUS:
-				return FarmPatch.GUILD_CELASTRUS;
-			case REDWOOD:
-				return FarmPatch.GUILD_REDWOOD;
-			default:
-				return null;
-		}
 	}
 
 	public String describe()

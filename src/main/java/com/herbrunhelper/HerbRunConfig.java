@@ -11,6 +11,27 @@ public interface HerbRunConfig extends Config
 {
 	String GROUP = "herbrunhelper";
 
+	/** How the stops are ordered. */
+	enum RouteOrder
+	{
+		WIKI("Wiki order"),
+		NEAREST("Nearest first"),
+		CUSTOM("My order");
+
+		private final String label;
+
+		RouteOrder(String label)
+		{
+			this.label = label;
+		}
+
+		@Override
+		public String toString()
+		{
+			return label;
+		}
+	}
+
 	@ConfigSection(name = "Run", description = "What the run includes", position = 0)
 	String runSection = "run";
 
@@ -170,6 +191,36 @@ public interface HerbRunConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(keyName = "routeOrder", name = "Route order",
+		description = "Wiki order for a familiar route, nearest first from where you stand, or your own order (the arrows on each stop card)",
+		position = 0, section = navSection)
+	default RouteOrder routeOrder()
+	{
+		return RouteOrder.WIKI;
+	}
+
+	@ConfigItem(keyName = "customRoute", name = "", description = "", hidden = true)
+	default String customRoute()
+	{
+		return "";
+	}
+
+	@ConfigItem(keyName = "showStepOverlay", name = "Step infobox",
+		description = "Show the current step in an on-screen box, like Quest Helper, without opening the sidebar",
+		position = 9, section = navSection)
+	default boolean showStepOverlay()
+	{
+		return true;
+	}
+
+	@ConfigItem(keyName = "waitUntilReady", name = "Wait until ready",
+		description = "Show the checklist first and only start guiding you once the items are in your inventory",
+		position = 12, section = runSection)
+	default boolean waitUntilReady()
+	{
+		return true;
+	}
+
 	@ConfigItem(keyName = "useSpells", name = "Use spells (runes)",
 		description = "Use standard spellbook teleports. Used instead of tabs when both are on.",
 		position = 0, section = navSection)
@@ -311,15 +362,31 @@ public interface HerbRunConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(keyName = "highlightBank", name = "Highlight in bank", description = "Outline the items to withdraw when your bank is open", position = 1, section = bankSection)
+	@ConfigItem(keyName = "highlightBank", name = "Highlight in bank", description = "Mark the items to withdraw when your bank is open", position = 1, section = bankSection)
 	default boolean highlightBank()
 	{
 		return true;
 	}
 
-	@ConfigItem(keyName = "highlightColor", name = "Highlight colour", description = "Colour of the bank highlight", position = 2, section = bankSection)
+	@ConfigItem(keyName = "showBankDetails", name = "Details in bank view",
+		description = "Show the amount needed and whether it can be noted under each item in the Farm run bank view",
+		position = 2, section = bankSection)
+	default boolean showBankDetails()
+	{
+		return true;
+	}
+
+	@ConfigItem(keyName = "highlightColor", name = "Highlight colour", description = "Colour of the bank highlight", position = 3, section = bankSection)
 	default Color highlightColor()
 	{
 		return new Color(80, 220, 80);
+	}
+
+	@ConfigItem(keyName = "animateBankButton", name = "Animated bank button",
+		description = "Draw a small animated glow, leaf ring and fireflies around the Farm run bank button while its tab is closed",
+		position = 4, section = bankSection)
+	default boolean animateBankButton()
+	{
+		return true;
 	}
 }

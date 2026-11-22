@@ -4,7 +4,19 @@ Made by ToadFx. Last updated: 2026-11-18.
 
 ## Status
 
-Version **1.15.0**. Live on the Plugin Hub.
+Version **1.16.0**. Live on the Plugin Hub.
+
+## 1.16.0 (2026-11-22)
+- [x] "Farm run" bank view: farming button in the bank title bar, Bank Tags view with only the needed items.
+- [x] Rune engine: rune pouch (read from varbits), staves/tomes with infinite runes, combination runes, per-rune slot accounting.
+- [x] "Take with you" shows carried/need and updates as items are withdrawn.
+- [x] Seed vault and tool leprechaun counts, with collection notes.
+- [x] Harvest slot reservation in bank stops.
+- [x] Route order: wiki, nearest first, custom (up/down arrows on stop cards).
+- [x] Step box under the player.
+- [x] Bank stops are navigation targets (hint arrow, minimap, Shortest Path).
+- [x] P0 fixes: diseased/growing step logic, per-patch progress, spirit tree limits, growing patches not replanted, account reset, done stops in slot count, hops dibber, potato cactus clock, notification reset.
+- [x] Real JUnit tests for the planner, rune supply, step items, growth clock and bank tiles (26 tests).
 
 ## Done
 

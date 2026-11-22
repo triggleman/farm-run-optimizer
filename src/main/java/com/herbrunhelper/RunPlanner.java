@@ -2,6 +2,7 @@ package com.herbrunhelper;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,8 +17,22 @@ import java.util.Set;
  */
 public final class RunPlanner
 {
+	public enum RouteMode
+	{
+		WIKI,
+		NEAREST,
+		CUSTOM
+	}
+
 	public static final class Options
 	{
+		public RouteMode routeMode = RouteMode.WIKI;
+		/** Patch order saved by the player's up/down arrows, most important first. */
+		public List<FarmPatch> customOrder = new ArrayList<>();
+		/** Where the player is, for "nearest first" and for a sensible first stop. */
+		public int playerX;
+		public int playerY;
+		public int playerPlane = -1;
 		public final Set<PatchType> runs = EnumSet.of(PatchType.HERB, PatchType.TREE);
 		public boolean useCompost = true;
 		public boolean bringRake = true;
@@ -30,6 +45,17 @@ public final class RunPlanner
 		public Set<FarmPatch> disabledPatches = EnumSet.noneOf(FarmPatch.class);
 		/** Patches with something of yours growing or ready: always visited, and get seeds first. */
 		public Set<FarmPatch> usedPatches = EnumSet.noneOf(FarmPatch.class);
+		/** Patches with a live crop in them (growing or ready), so they must not be replanted. */
+		public Set<FarmPatch> livingPatches = EnumSet.noneOf(FarmPatch.class);
+		/** Carried items (inventory + equipment), for the rune plan. */
+		public Map<String, Integer> carried = new HashMap<>();
+		/** Worn equipment, for the rune plan. */
+		public Map<String, Integer> equipped = new HashMap<>();
+		/** Runes inside the rune pouch, by name. */
+		public Map<String, Integer> pouchRunes = new HashMap<>();
+		public boolean pouchCarried;
+		public String pouchName = "Rune pouch";
+		public int pouchCapacity = 3;
 		/** Crops in the order to plant them (e.g. most profitable first); empty = highest level first. */
 		public List<Crop> cropRank = new ArrayList<>();
 		/** Farming Guild contract crop to plant in the guild patch, or null. */
@@ -56,14 +82,6 @@ public final class RunPlanner
 	public static final int TREE_REMOVAL_COINS = 200;
 
 	private static final String[] COMPOST_BEST_FIRST = {"Ultracompost", "Supercompost", "Compost"};
-
-	/** Items you can wear instead of carrying, by equipment slot (first owned in a slot is worn). */
-	private static final String[][] WEAR_SLOTS = {
-		{"Magic secateurs", "Dramen staff", "Lunar staff"},
-		{"Skills necklace", "Digsite pendant", "Pendant of ates", "Xeric's talisman"},
-		{"Farming cape", "Ardougne cloak", "Hunter cape"},
-		{"Explorer's ring"},
-	};
 
 	private RunPlanner()
 	{
@@ -162,6 +180,14 @@ public final class RunPlanner
 		{
 			picked.add(pickTeleport(patch, plan, ctx, included));
 		}
+		if (options.routeMode == RouteMode.CUSTOM)
+		{
+			picked = customOrder(picked, options);
+		}
+		else if (options.routeMode == RouteMode.NEAREST && (options.playerX != 0 || options.playerY != 0))
+		{
+			picked = nearestOrder(picked, options);
+		}
 		plan.route.addAll(orderRoute(picked, ctx));
 
 		if (plan.route.isEmpty())
@@ -201,8 +227,9 @@ public final class RunPlanner
 			}
 		}
 
-		List<RunPlan.Withdrawal> fixed = fixedItems(plan, owned, options, bottomless,
-			doing.contains(PatchType.HERB) || doing.contains(PatchType.ALLOTMENT));
+		boolean yieldRun = doing.contains(PatchType.HERB) || doing.contains(PatchType.ALLOTMENT)
+			|| doing.contains(PatchType.HOPS);
+		List<RunPlan.Withdrawal> fixed = fixedItems(plan, owned, options, bottomless, yieldRun);
 		plan.estimatedXp = estimateXp(plan, options);
 		splitIntoTrips(plan, fixed, options);
 		return plan;
@@ -311,6 +338,98 @@ public final class RunPlanner
 	private static boolean isFairy(RunPlan.RouteStep s)
 	{
 		return s.teleport != null && s.teleport.getKind() == Teleport.Kind.FAIRY_RING;
+	}
+
+	/** The player's own order, with patches they haven't placed after the ones they have. */
+	static List<RunPlan.RouteStep> customOrder(List<RunPlan.RouteStep> steps, Options options)
+	{
+		Map<FarmPatch, Integer> rank = new java.util.HashMap<>();
+		for (int i = 0; i < options.customOrder.size(); i++)
+		{
+			rank.put(options.customOrder.get(i), i);
+		}
+		return sortHeads(steps, (a, b) ->
+		{
+			int ra = rank.getOrDefault(a.patch, Integer.MAX_VALUE);
+			int rb = rank.getOrDefault(b.patch, Integer.MAX_VALUE);
+			if (ra != rb)
+			{
+				return Integer.compare(ra, rb);
+			}
+			return Integer.compare(a.patch.ordinal(), b.patch.ordinal());
+		});
+	}
+
+	/** Greedy nearest-neighbour from where the player stands, then from each patch. */
+	static List<RunPlan.RouteStep> nearestOrder(List<RunPlan.RouteStep> steps, Options options)
+	{
+		List<RunPlan.RouteStep> heads = new ArrayList<>();
+		List<RunPlan.RouteStep> walks = new ArrayList<>();
+		for (RunPlan.RouteStep s : steps)
+		{
+			(s.anchor == null ? heads : walks).add(s);
+		}
+		List<RunPlan.RouteStep> left = new ArrayList<>(heads);
+		List<RunPlan.RouteStep> out = new ArrayList<>();
+		double x = options.playerX;
+		double y = options.playerY;
+		while (!left.isEmpty())
+		{
+			RunPlan.RouteStep best = null;
+			double bestDistance = Double.MAX_VALUE;
+			for (RunPlan.RouteStep s : left)
+			{
+				double dx = s.patch.getX() - x;
+				double dy = s.patch.getY() - y;
+				double distance = Math.hypot(dx, dy);
+				if (distance < bestDistance)
+				{
+					bestDistance = distance;
+					best = s;
+				}
+			}
+			left.remove(best);
+			out.add(best);
+			addWalks(out, best, walks);
+			x = best.patch.getX();
+			y = best.patch.getY();
+		}
+		out.addAll(walks);
+		return out;
+	}
+
+	private static List<RunPlan.RouteStep> sortHeads(List<RunPlan.RouteStep> steps,
+		java.util.Comparator<RunPlan.RouteStep> comparator)
+	{
+		List<RunPlan.RouteStep> heads = new ArrayList<>();
+		List<RunPlan.RouteStep> walks = new ArrayList<>();
+		for (RunPlan.RouteStep s : steps)
+		{
+			(s.anchor == null ? heads : walks).add(s);
+		}
+		heads.sort(comparator);
+		List<RunPlan.RouteStep> out = new ArrayList<>();
+		for (RunPlan.RouteStep head : heads)
+		{
+			out.add(head);
+			addWalks(out, head, walks);
+		}
+		out.addAll(walks);
+		return out;
+	}
+
+	private static void addWalks(List<RunPlan.RouteStep> out, RunPlan.RouteStep head,
+		List<RunPlan.RouteStep> walks)
+	{
+		for (java.util.Iterator<RunPlan.RouteStep> it = walks.iterator(); it.hasNext(); )
+		{
+			RunPlan.RouteStep walk = it.next();
+			if (walk.anchor != null && walk.anchor == head.patch)
+			{
+				out.add(walk);
+				it.remove();
+			}
+		}
 	}
 
 	/**
@@ -490,18 +609,20 @@ public final class RunPlanner
 				queue.add(crop);
 			}
 		}
-		// Patches you've just planted on this run don't need another seed.
+		// Patches you've just planted on this run don't need another seed. Nor do patches that
+		// still have a live crop in them: those are only visited to harvest or cure. A dead or
+		// stumped patch does need one, after it's cleared.
 		List<FarmPatch> order = new ArrayList<>();
 		for (FarmPatch p : included)
 		{
-			if (p.getType() == type && options.usedPatches.contains(p) && !options.doneThisRun.contains(p))
+			if (p.getType() == type && options.usedPatches.contains(p) && needsReplant(p, options))
 			{
 				order.add(p);
 			}
 		}
 		for (FarmPatch p : included)
 		{
-			if (p.getType() == type && !options.usedPatches.contains(p) && !options.doneThisRun.contains(p))
+			if (p.getType() == type && !options.usedPatches.contains(p) && needsReplant(p, options))
 			{
 				order.add(p);
 			}
@@ -543,17 +664,18 @@ public final class RunPlanner
 		{
 			// A spirit tree is kept once planted (grown, it's a teleport), so patches with one in
 			// aren't replanted, and each counts towards how many you may have planted at once,
-			// which depends on your Farming level (OSRS Wiki).
+			// which depends on your Farming level (OSRS Wiki). Dead, stumped and diseased ones
+			// don't count: they can be cleared and replaced.
 			int allowed = spiritTreeLimit(plan.farmingLevel);
 			int occupied = 0;
 			for (FarmPatch p : FarmPatch.values())
 			{
-				if (p.getType() == PatchType.SPIRIT_TREE && options.growingCrops.containsKey(p))
+				if (p.getType() == PatchType.SPIRIT_TREE && options.livingPatches.contains(p))
 				{
 					occupied++;
 				}
 			}
-			order.removeIf(options.growingCrops::containsKey);
+			order.removeIf(options.livingPatches::contains);
 			int cap = Math.max(0, allowed - occupied);
 			if (order.size() > cap)
 			{
@@ -588,6 +710,18 @@ public final class RunPlanner
 				: "Only enough " + what + " for " + (order.size() - unplanted) + " of " + order.size()
 				+ " " + patchName + " patches: " + rest) + ". Best you can plant: " + best.getSeedName() + ".");
 		}
+	}
+
+	/**
+	 * True if this patch should be given a seed/sapling: not done this run, not still growing,
+	 * and not diseased (a diseased patch is cured, not replanted). Ready crops are included:
+	 * they're harvested and replanted.
+	 */
+	private static boolean needsReplant(FarmPatch patch, Options options)
+	{
+		return !options.doneThisRun.contains(patch)
+			&& !options.notReady.containsKey(patch)
+			&& !options.diseased.contains(patch);
 	}
 
 	/** Spirit trees you may have planted at once: 1 at 83, 2 at 88, 3 at 93, 4 at 96, any at 99. */
@@ -828,10 +962,12 @@ public final class RunPlanner
 
 	/** Tools, teleports, runes, staff: carried for the whole run. */
 	private static List<RunPlan.Withdrawal> fixedItems(RunPlan plan, Map<String, Integer> owned, Options options,
-		String bottomless, boolean herbs)
+		String bottomless, boolean yieldRun)
 	{
 		List<RunPlan.Withdrawal> out = new ArrayList<>();
-		if (herbs)
+		// Hops are planted with a seed dibber too, so a hops-only run still needs one.
+		boolean dibber = options.runs.contains(PatchType.HERB) || options.runs.contains(PatchType.HOPS);
+		if (dibber)
 		{
 			requireTool(plan, out, owned, "Seed dibber");
 		}
@@ -843,10 +979,6 @@ public final class RunPlanner
 		if (bottomless != null)
 		{
 			out.add(new RunPlan.Withdrawal(bottomless, 1, "make sure it's filled"));
-		}
-		if (herbs && owned.getOrDefault("Magic secateurs", 0) > 0)
-		{
-			out.add(new RunPlan.Withdrawal("Magic secateurs", 1, "+10% herb yield, wield it"));
 		}
 
 		// Diseased patches: plant cure for herbs, secateurs to prune trees.
@@ -866,15 +998,22 @@ public final class RunPlanner
 				}
 			}
 		}
+		boolean magicSecateurs = owned.getOrDefault("Magic secateurs", 0) > 0;
+		if ((yieldRun || sickTree) && magicSecateurs)
+		{
+			out.add(new RunPlan.Withdrawal("Magic secateurs", 1,
+				yieldRun ? "+10% crop yield; wield it" : "cure the diseased tree", 0));
+		}
 		if (sickHerbs > 0)
 		{
-			out.add(new RunPlan.Withdrawal("Plant cure", sickHerbs, "for the diseased herb patch"));
+			// Plant cure is not stackable, so each one takes a slot unless noted.
+			out.add(new RunPlan.Withdrawal("Plant cure", sickHerbs, "for the diseased herb patch", sickHerbs));
 			if (owned.getOrDefault("Plant cure", 0) < sickHerbs)
 			{
 				plan.warnings.add("Buy " + sickHerbs + " plant cure (Farming shops or the GE) for your diseased herbs.");
 			}
 		}
-		if (sickTree && owned.getOrDefault("Magic secateurs", 0) == 0)
+		if (sickTree && !magicSecateurs)
 		{
 			requireTool(plan, out, owned, "Secateurs");
 		}
@@ -926,15 +1065,27 @@ public final class RunPlanner
 			int qty = name.toLowerCase().endsWith(" teleport") ? e.getValue() : 1;
 			out.add(new RunPlan.Withdrawal(name, qty, firstPatch.get(name)));
 		}
-		for (Map.Entry<String, Integer> e : runes.entrySet())
+
+		// Spell runes: staves, tomes, the rune pouch and combination runes first.
+		if (!runes.isEmpty())
 		{
-			out.add(new RunPlan.Withdrawal(e.getKey(), e.getValue(), "spell runes"));
-			int have = owned.getOrDefault(e.getKey(), 0);
-			if (have < e.getValue())
-			{
-				plan.warnings.add("Short " + (e.getValue() - have) + " " + e.getKey()
-					+ " (fine if a staff or rune pouch covers it).");
-			}
+			RuneSupply.Context rc = new RuneSupply.Context();
+			rc.need = runes;
+			rc.owned = owned;
+			rc.carried = options.carried;
+			rc.equipped = options.equipped;
+			rc.pouch = options.pouchRunes;
+			rc.pouchCarried = options.pouchCarried;
+			rc.pouchName = options.pouchName;
+			rc.pouchCapacity = options.pouchCapacity;
+			rc.herbs = options.runs.contains(PatchType.HERB);
+			rc.ownsMagicSecateurs = magicSecateurs;
+			RuneSupply.Result rp = RuneSupply.plan(rc);
+			out.addAll(rp.withdrawals);
+			plan.optionalItems.addAll(rp.optional);
+			plan.runeNotes.addAll(rp.notes);
+			plan.warnings.addAll(rp.warnings);
+			plan.runeSummary = rp.summary;
 		}
 		if (unknownRunes)
 		{
@@ -945,7 +1096,7 @@ public final class RunPlanner
 			String staff = Teleport.staffName(owned);
 			if (staff != null)
 			{
-				out.add(new RunPlan.Withdrawal(staff, 1, "wield it for fairy rings"));
+				out.add(new RunPlan.Withdrawal(staff, 1, "wield it for fairy rings", 0));
 			}
 		}
 		return out;
@@ -960,38 +1111,34 @@ public final class RunPlanner
 		}
 	}
 
-	/** Slots the fixed items take, counting one wearable per equipment slot as worn. */
+	/** Slots the fixed items take. Worn items and runes inside a rune pouch count none. */
 	static int fixedSlots(List<RunPlan.Withdrawal> fixed)
 	{
 		int slots = 0;
-		boolean[] worn = new boolean[WEAR_SLOTS.length];
-		outer:
 		for (RunPlan.Withdrawal w : fixed)
 		{
-			for (int i = 0; i < WEAR_SLOTS.length; i++)
-			{
-				for (String prefix : WEAR_SLOTS[i])
-				{
-					if (w.itemName.startsWith(prefix) && !worn[i])
-					{
-						worn[i] = true;
-						continue outer;
-					}
-				}
-			}
-			slots++;
+			slots += w.slots;
 		}
 		return slots;
 	}
 
-	/** Slots one leg's supplies take: saplings and unnoted compost one each; seeds, payments, coins stack. */
+	/**
+	 * Slots one leg's supplies take: saplings and unnoted compost one each; seeds, payments and
+	 * coins stack. One slot is also reserved for each kind of produce the leg will harvest, so a
+	 * full inventory doesn't leave the fruit or herbs behind (produce of one kind stacks).
+	 */
 	static int legSlots(List<RunPlan.RouteStep> leg)
 	{
 		Set<String> stackTypes = new LinkedHashSet<>();
+		Set<Crop> harvestTypes = EnumSet.noneOf(Crop.class);
 		int slots = 0;
 		for (RunPlan.RouteStep s : leg)
 		{
-			if (s.crop != null && !s.done)
+			if (s.done)
+			{
+				continue; // nothing to bring for a stop that's already finished
+			}
+			if (s.crop != null)
 			{
 				if (s.patch.getType().seedsStack())
 				{
@@ -1001,6 +1148,10 @@ public final class RunPlanner
 				{
 					slots++;
 				}
+				if (producesHarvest(s.patch.getType()))
+				{
+					harvestTypes.add(s.crop);
+				}
 			}
 			if (s.compost != null && !s.compost.startsWith("Bottomless"))
 			{
@@ -1009,9 +1160,12 @@ public final class RunPlanner
 			if (s.paymentItem != null)
 			{
 				stackTypes.add(s.paymentItem + " (noted)");
-				for (String[] extra : s.crop.getExtraPayments())
+				if (s.crop != null)
 				{
-					stackTypes.add(extra[0] + " (noted)");
+					for (String[] extra : s.crop.getExtraPayments())
+					{
+						stackTypes.add(extra[0] + " (noted)");
+					}
 				}
 			}
 			if (s.coins > 0)
@@ -1019,7 +1173,26 @@ public final class RunPlanner
 				stackTypes.add("Coins");
 			}
 		}
-		return slots + stackTypes.size();
+		return slots + stackTypes.size() + harvestTypes.size();
+	}
+
+	/** Patch types whose produce stacks in the inventory and needs room before the next bank. */
+	private static boolean producesHarvest(PatchType type)
+	{
+		switch (type)
+		{
+			case HERB:
+			case ALLOTMENT:
+			case BUSH:
+			case HOPS:
+			case CACTUS:
+			case FRUIT_TREE:
+			case CALQUAT:
+			case CELASTRUS:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	/**

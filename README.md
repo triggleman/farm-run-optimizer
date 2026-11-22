@@ -15,14 +15,14 @@
 
 ## Patch notes
 
-**Latest: 1.15.0**
-- **Herb profit the OSRS Wiki way:** expected herbs per patch from your level, compost, magic secateurs, Farming cape, diaries and disease, minus seed and compost.
-- **New hardwoods:** camphor, ironwood and rosewood from the Sailing update are planned, timed and tracked in every hardwood patch.
-- **Seven new runs** (turn them on in the panel): bushes, hops, cactus, calquat, spirit trees, celastrus and redwood, each with timers, steps, gardener payments and Farming Guild contracts.
-- **Steps at each stop are more reliable:** compost and pay the gardener now show after planting for every run type, including fruit trees. Paying the gardener ends the step as soon as they agree to look after the patch. Bushes and cactus have you pick before you dig.
-- **Walking lines come from Shortest Path:** the plugin hands each stop to the [Shortest Path](https://runelite.net/plugin-hub/show/shortest-path) plugin, and tells you if it isn't installed or is turned off. The built-in line is gone, which also makes the plugin much smaller.
-- **More travel:** any Ardougne cloak (even cloak 1) for the Ardougne bush, plus amulet of glory, ring of wealth and more fairy rings.
-- **Panel:** game hint arrow on/off in Settings, and channel buttons at the bottom.
+**Latest: 1.16.0**
+- **Route order:** Wiki order, nearest first from where you stand, or your own order with the up/down arrows on each stop card.
+- **Room for the harvest.** Bank stops reserve slots for the herbs, fruit and other produce a leg will pick, so you don't end up with a full inventory.
+- **Current step under your character**, so you can play without opening the sidebar.
+- **Bank stops are walked to** with the hint arrow, minimap and Shortest Path line.
+- **Reliability:** diseased patches say cure/prune instead of plant, growing patches are never given another seed, planting one patch keeps the other patches' compost/payment steps, dead spirit trees no longer use the planted limit, hops-only runs bring a seed dibber, and switching accounts clears the previous character's state.
+- **Bring list:** it updates as you withdraw, and items that are only in the seed vault or at the tool leprechaun are marked as such. Spell runes are handled in detail in the features below.
+- Previous: herb profit the OSRS Wiki way, camphor/ironwood/rosewood hardwoods, seven new runs (bushes, hops, cactus, calquat, spirit trees, celastrus, redwood), and the full set of patch timers.
 
 Every change, version by version, is in the [changelog](CHANGELOG.md).
 
@@ -41,6 +41,7 @@ Your Farming level, quests and diaries are read automatically, so the plan only 
 - **Twelve run types** that combine into one route: herbs, allotments, trees, fruit trees, hardwood, bushes, hops, cactus, calquat, spirit trees, celastrus and redwood. Allotments (potatoes up to snape grass, from level 1) and hops (from level 3) are a great start before herbs and trees unlock. Spirit tree runs only plant as many as your Farming level allows.
 - **Only ready patches.** If one herb is ready, the run is just that patch. Growing patches are left off, with the time until the next one is ready.
 - **Pick your crops and patches.** Each run lists every crop (locked ones show the level you need) and every patch. Click to choose what to plant and where to go.
+- **Route order.** Use the wiki's familiar order, start at the patch nearest you, or make your own order with the up/down arrows on each stop card. The mode is in the plugin's RuneLite settings ("Route order"); the arrows switch to "My order" automatically.
 - **Most profitable herb first.** See the profit per patch for every herb you can grow, at Grand Exchange prices, and plant the best one first.
 - **Farming contracts.** Your Farming Guild contract is shown, and the contract crop is planted in the guild patch.
 
@@ -48,9 +49,12 @@ Your Farming level, quests and diaries are read automatically, so the plan only 
 
 ### What to bring
 - **Take with you.** One list of seeds, saplings, compost, gardener payments (noted is fine), coins, tools, teleport items and spell runes. Items you're carrying get a green border; the rest are outlined in your bank.
-- **Bank stops.** If it won't all fit in 28 slots, the route adds a stop at the nearest bank with exactly what to withdraw.
+- **Farm run bank view.** Click the farming icon in the bank's title bar to show only the items this run still needs, then click it again to go back. It uses RuneLite's Bank Tags, so it is client-side only.
+- **Seed vault and tool leprechaun.** Seeds in the Farming Guild vault and tools, compost and plant cures at the leprechaun count, with a note saying where to collect them.
+- **Bank stops.** If it won't all fit in 28 slots, the route adds a stop at the nearest bank with exactly what to withdraw, and reserves room for the produce you'll harvest.
 - **Plant cure and secateurs** are added when a patch is diseased.
 - **Tree seed reminders** to pot and water your seeds so you have saplings for next time.
+- **Spell runes, if you cast teleports:** the list understands the **rune pouch**, staves/battlestaves/tomes that supply a rune for free, and **combination runes**, so it only asks for what is still missing.
 
 <p align="center"><img src="https://raw.githubusercontent.com/triggleman/farm-run-optimizer/main/images/screenshots/take-with-you.png" alt="Take with you list, tips and finished stops" height="520"></p>
 
@@ -65,6 +69,7 @@ Your Farming level, quests and diaries are read automatically, so the plan only 
 
 ### At each patch
 - **A to-do card for every stop**: harvest, check health, pay the gardener, dig up a stump, plant, compost, pay for protection. The next stop is gold and finished stops turn green.
+- **The step you're on under your character**, with the item to use, so you can play without opening the sidebar.
 - **The item you need right now** (seed, compost, payment) is highlighted in your inventory.
 
 <p align="center">

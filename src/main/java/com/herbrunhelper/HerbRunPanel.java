@@ -33,6 +33,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -48,7 +49,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.15.0";
+	static final String VERSION = "1.16.0";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -59,8 +60,8 @@ public class HerbRunPanel extends PluginPanel
 	private static final Color RED = new Color(230, 80, 70);
 	private static final Color CARD = ColorScheme.DARKER_GRAY_COLOR;
 
-	private static final int DRAMEN_STAFF_ICON = 772;
-	private static final int LAW_RUNE_ICON = 563;
+	private static final int DRAMEN_STAFF_ICON = ItemID.DRAMEN_STAFF;
+	private static final int LAW_RUNE_ICON = ItemID.LAWRUNE;
 
 	/** Items worth wearing instead of carrying, with the tip to show. */
 	private static final String[][] WEARABLE_TIPS = {
@@ -100,6 +101,8 @@ public class HerbRunPanel extends PluginPanel
 
 	private RunPlan plan;
 	private Map<String, Integer> carried = Collections.emptyMap();
+	private Map<String, Integer> seedVault = Collections.emptyMap();
+	private Map<String, Integer> leprechaun = Collections.emptyMap();
 	private Set<String> worn = Collections.emptySet();
 	private Map<String, Integer> nameToId = Collections.emptyMap();
 	private FarmPatch nextPatch;
@@ -127,11 +130,15 @@ public class HerbRunPanel extends PluginPanel
 	private Set<FarmPatch> offPatches = EnumSet.noneOf(FarmPatch.class);
 	private Set<PatchType> runs = EnumSet.noneOf(PatchType.class);
 
+	private BiConsumer<FarmPatch, Integer> onMoveStop;
+
 	public HerbRunPanel(ItemManager itemManager, PatchTimers timers, Runnable onResetTimers,
 		BiConsumer<PatchType, Boolean> onRunChanged, Consumer<Teleport> onToggleTeleport,
 		Consumer<Boolean> onUseSpells, Consumer<Boolean> onUseTabs, Consumer<Crop> onToggleCrop,
-		Consumer<FarmPatch> onTogglePatch, BiConsumer<String, Boolean> onSetting)
+		Consumer<FarmPatch> onTogglePatch, BiConsumer<String, Boolean> onSetting,
+		BiConsumer<FarmPatch, Integer> onMoveStop)
 	{
+		this.onMoveStop = onMoveStop;
 		this.onSetting = onSetting;
 		this.onRunChanged = onRunChanged;
 		this.onToggleCrop = onToggleCrop;
@@ -253,6 +260,12 @@ public class HerbRunPanel extends PluginPanel
 	void setRuns(Set<PatchType> runs)
 	{
 		this.runs = runs;
+	}
+
+	void setSources(Map<String, Integer> seedVault, Map<String, Integer> leprechaun)
+	{
+		this.seedVault = seedVault;
+		this.leprechaun = leprechaun;
 	}
 
 	void setPlan(RunPlan plan, Map<String, Integer> carried, Set<String> worn, Map<String, Integer> nameToId,
@@ -639,6 +652,19 @@ public class HerbRunPanel extends PluginPanel
 			col.addRow(wrapped("About " + plan.slotsNeeded + "/28 inventory slots"
 				+ (plan.bankStops.isEmpty() ? "" : " • " + plan.bankStops.size() + " bank stop"
 				+ (plan.bankStops.size() > 1 ? "s" : "") + " on the way"), fit), 8);
+			// Staves, tomes, the rune pouch and combination runes are why some rune lines are gone.
+			if (!plan.runeNotes.isEmpty() || !plan.runeSummary.isEmpty())
+			{
+				String note = plan.runeNotes.isEmpty() ? plan.runeSummary
+					: String.join(" • ", plan.runeNotes);
+				col.addRow(wrapped("Runes: " + esc(note), new Color(127, 212, 255)), 4);
+			}
+			col.addRow(wrapped("In the bank, click the farming icon in the title bar to show only these items.", MUTED), 4);
+			for (RunPlan.Withdrawal w : plan.optionalItems)
+			{
+				col.addRow(wrapped("Optional: " + esc(w.itemName)
+					+ (w.note.isEmpty() ? "" : " (" + esc(w.note) + ")"), MUTED), 1);
+			}
 		}
 
 		// Wear tips
@@ -766,6 +792,17 @@ public class HerbRunPanel extends PluginPanel
 		JPanel card = (JPanel) iconCard(iconIdFor(step.teleport, step.teleportItem), spellSprite(step.teleport), html.toString(),
 			first ? GOLD : null, Color.WHITE);
 
+		// Reorder this stop: the arrows switch the run to "My order" and save it.
+		JPanel reorder = new JPanel(new GridLayout(2, 1, 0, 0));
+		reorder.setOpaque(false);
+		JButton up = reorderButton("\u25B2", "Move this stop earlier");
+		up.addActionListener(e -> onMoveStop.accept(step.patch, -1));
+		JButton down = reorderButton("\u25BC", "Move this stop later");
+		down.addActionListener(e -> onMoveStop.accept(step.patch, 1));
+		reorder.add(up);
+		reorder.add(down);
+		card.add(reorder, BorderLayout.EAST);
+
 		// Items used at this stop
 		List<RunPlan.Withdrawal> items = new ArrayList<>();
 		if (step.crop != null)
@@ -793,6 +830,20 @@ public class HerbRunPanel extends PluginPanel
 		return card;
 	}
 
+	private static JButton reorderButton(String text, String tip)
+	{
+		JButton button = new JButton(text);
+		button.setToolTipText(tip);
+		button.setFont(FontManager.getRunescapeSmallFont());
+		button.setForeground(MUTED);
+		button.setBackground(CARD);
+		button.setFocusPainted(false);
+		button.setMargin(new Insets(0, 1, 0, 1));
+		button.setPreferredSize(new Dimension(16, 16));
+		button.setBorder(BorderFactory.createEmptyBorder());
+		return button;
+	}
+
 	private JComponent nowBanner()
 	{
 		int id = idOf(hintItem);
@@ -807,12 +858,15 @@ public class HerbRunPanel extends PluginPanel
 	private static final String[][] SETTINGS = {
 		{"shortestPathLine", "Shortest Path walking line", "Send each stop to Shortest Path (if installed) for its walking line"},
 		{"gameHintArrow", "Game hint arrow", "The game's yellow arrow (also on the minimap) over the next patch, ring, tree or gardener"},
+		{"showStepOverlay", "Step infobox", "Show the current step in an on-screen box, like Quest Helper"},
+		{"waitUntilReady", "Wait until ready", "Show the checklist first and only guide you once you have the items"},
 		{"pathMinigameTeleports", "Path: minigame teleports", "Let Shortest Path's line use minigame teleports like Rat Pits"},
 		{"highlightPatch", "Highlight next patch", "Outline the next patch on the ground"},
 		{"highlightGardener", "Highlight gardener to pay", "Outline the gardener when you need to pay them"},
 		{"pointerArrow", "Arrow over target", "A steady arrow over the next patch, ring, tree or gardener"},
 		{"highlightInventory", "Highlight step items", "Outline the seed / compost / payment your current step needs"},
-		{"highlightBank", "Highlight in bank", "Outline what to withdraw when your bank is open"},
+		{"highlightBank", "Highlight in bank", "Mark what to withdraw when your bank is open"},
+		{"showBankDetails", "Details in bank view", "Show / N and noted under each item in the Farm run bank view"},
 		{"notifyReady", "Notify when ready", "Notification when a patch finishes growing"},
 		{"notifyDisease", "Notify diseased/dead", "Notification when a patch is found diseased or dead"},
 		{"showReadyOverlay", "Run-ready box", "Small on-screen box showing which runs are ready"},
@@ -1155,7 +1209,13 @@ public class HerbRunPanel extends PluginPanel
 
 	private JComponent itemTile(RunPlan.Withdrawal w, boolean showCarried)
 	{
-		boolean done = showCarried && carried.getOrDefault(w.itemName, 0) >= w.quantity;
+		int have = carried.getOrDefault(w.itemName, 0);
+		boolean done = showCarried && have >= w.quantity;
+		boolean partial = showCarried && have > 0 && !done;
+		int inLeprechaun = leprechaun.getOrDefault(w.itemName, 0);
+		int inVault = seedVault.getOrDefault(w.itemName, 0);
+		boolean atSource = showCarried && !done
+			&& (inLeprechaun >= w.toWithdraw || inVault >= w.toWithdraw);
 		int id = idOf(w.itemName);
 
 		JLabel tile = new JLabel();
@@ -1163,13 +1223,28 @@ public class HerbRunPanel extends PluginPanel
 		tile.setHorizontalAlignment(SwingConstants.CENTER);
 		tile.setOpaque(true);
 		tile.setBackground(CARD);
-		Color border = done ? GREEN : id > 0 ? ORANGE : RED;
+		Color border = done ? GREEN : (partial || atSource) ? YELLOW : id > 0 ? ORANGE : RED;
 		tile.setBorder(BorderFactory.createLineBorder(border, done ? 2 : 1));
 
-		String tip = w.quantity + " x " + w.itemName + (w.note.isEmpty() ? "" : " (" + w.note + ")");
+		String amount = showCarried && (done || partial)
+			? " (" + Math.min(have, w.quantity) + "/" + w.quantity + " carried)" : "";
+		String tip = w.toWithdraw + " to withdraw: " + w.itemName
+			+ (w.note.isEmpty() ? "" : " (" + w.note + ")") + amount;
+		if (w.toWithdraw != w.quantity)
+		{
+			tip += " (need " + w.quantity + ")";
+		}
 		if (done)
 		{
 			tip += " - carrying";
+		}
+		else if (inLeprechaun >= w.toWithdraw)
+		{
+			tip += " - at the tool leprechaun";
+		}
+		else if (inVault >= w.toWithdraw)
+		{
+			tip += " - in the seed vault";
 		}
 		else if (id <= 0)
 		{
@@ -1179,11 +1254,11 @@ public class HerbRunPanel extends PluginPanel
 
 		if (id > 0)
 		{
-			itemManager.getImage(id, w.quantity, w.quantity > 1).addTo(tile);
+			itemManager.getImage(id, w.toWithdraw, w.toWithdraw > 1).addTo(tile);
 		}
 		else
 		{
-			tile.setText("<html><center>" + w.quantity + "<br>?</center></html>");
+			tile.setText("<html><center>" + w.toWithdraw + "<br>?</center></html>");
 			tile.setFont(FontManager.getRunescapeSmallFont());
 			tile.setForeground(MUTED);
 		}
@@ -1195,14 +1270,15 @@ public class HerbRunPanel extends PluginPanel
 		int id = idOf(w.itemName);
 		JLabel l = new JLabel();
 		l.setPreferredSize(new Dimension(34, 30));
-		l.setToolTipText(w.quantity + " x " + w.itemName + (w.note.isEmpty() ? "" : " (" + w.note + ")"));
+		l.setToolTipText(w.toWithdraw + " to withdraw: " + w.itemName
+			+ (w.note.isEmpty() ? "" : " (" + w.note + ")"));
 		if (id > 0)
 		{
-			itemManager.getImage(id, w.quantity, w.quantity > 1).addTo(l);
+			itemManager.getImage(id, w.toWithdraw, w.toWithdraw > 1).addTo(l);
 		}
 		else
 		{
-			l.setText(w.quantity + "x");
+			l.setText(w.toWithdraw + "x");
 			l.setFont(FontManager.getRunescapeSmallFont());
 			l.setForeground(MUTED);
 		}

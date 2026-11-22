@@ -12,11 +12,25 @@ import java.util.Map;
 public final class GrowthClock
 {
 	private final Map<PatchType, Long> phaseMillis = new EnumMap<>(PatchType.class);
+	/** Phases by growth tick length, so potato cactus (10 min) doesn't share the cactus phase (80 min). */
+	private final Map<Integer, Long> phaseByTick = new java.util.HashMap<>();
 
 	public synchronized void learn(PatchType type, long changedAt)
 	{
 		long tick = tickMillis(type);
-		phaseMillis.put(type, Math.floorMod(changedAt, tick));
+		long phase = Math.floorMod(changedAt, tick);
+		phaseMillis.put(type, phase);
+		phaseByTick.put(type.getTickMinutes(), phase);
+	}
+
+	/** Learn the phase at the crop's own tick length (potato cactus is the exception). */
+	public synchronized void learn(Crop crop, long changedAt)
+	{
+		long tick = tickMillis(crop);
+		long phase = Math.floorMod(changedAt, tick);
+		phaseByTick.put(crop.getTickMinutes(), phase);
+		// Keep the patch type's entry lined up for anything that still reads it.
+		phaseMillis.put(crop.getType(), Math.floorMod(phase, tickMillis(crop.getType())));
 	}
 
 	public synchronized boolean knows(PatchType type)
@@ -28,12 +42,14 @@ public final class GrowthClock
 	{
 		StringBuilder sb = new StringBuilder();
 		phaseMillis.forEach((t, p) -> sb.append(sb.length() > 0 ? ";" : "").append(t.name()).append(':').append(p));
+		phaseByTick.forEach((tick, p) -> sb.append(sb.length() > 0 ? ";" : "").append('#').append(tick).append(':').append(p));
 		return sb.toString();
 	}
 
 	public synchronized void load(String data)
 	{
 		phaseMillis.clear();
+		phaseByTick.clear();
 		if (data == null || data.isEmpty())
 		{
 			return;
@@ -41,9 +57,23 @@ public final class GrowthClock
 		for (String part : data.split(";"))
 		{
 			String[] kv = part.split(":");
+			if (kv.length != 2)
+			{
+				continue;
+			}
 			try
 			{
-				phaseMillis.put(PatchType.valueOf(kv[0]), Long.parseLong(kv[1]));
+				if (kv[0].startsWith("#"))
+				{
+					phaseByTick.put(Integer.parseInt(kv[0].substring(1)), Long.parseLong(kv[1]));
+				}
+				else
+				{
+					long value = Long.parseLong(kv[1]);
+					PatchType type = PatchType.valueOf(kv[0]);
+					phaseMillis.put(type, value);
+					phaseByTick.put(type.getTickMinutes(), value);
+				}
 			}
 			catch (RuntimeException ignored)
 			{
@@ -71,11 +101,13 @@ public final class GrowthClock
 		return crop.getTickMinutes() * 60_000L;
 	}
 
-	/** The crop's next growth tick after now (lined up with its patch type's learned timing). */
+	/** The crop's next growth tick after now, using the phase learned for its tick length. */
 	public synchronized long nextTick(Crop crop, long now)
 	{
 		long tick = tickMillis(crop);
-		long phase = Math.floorMod(phaseMillis.getOrDefault(crop.getType(), 0L), tick);
+		Long learned = phaseByTick.get(crop.getTickMinutes());
+		long phase = learned != null ? Math.floorMod(learned, tick)
+			: Math.floorMod(phaseMillis.getOrDefault(crop.getType(), 0L), tick);
 		return Math.floorDiv(now - phase, tick) * tick + phase + tick;
 	}
 

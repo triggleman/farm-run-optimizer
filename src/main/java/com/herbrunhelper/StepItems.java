@@ -117,9 +117,26 @@ public final class StepItems
 		{
 			return new Next("Rake", "Rake the weeds");
 		}
+		if (status == PatchTimers.Status.DISEASED)
+		{
+			// Trees are pruned with secateurs; everything else is cured with plant cure.
+			return type.isTreeLike()
+				? new Next("Secateurs", "Prune the diseased " + StopWork.plantName(type,
+					planting != null ? planting.crop : null))
+				: new Next("Plant cure", "Cure the diseased patch");
+		}
 		if (status == PatchTimers.Status.DEAD || status == PatchTimers.Status.STUMP)
 		{
 			return new Next("Spade", "Dig it up");
+		}
+		// A crop is already in the ground and still growing: nothing to plant or use yet.
+		if (planting != null && !planting.isReady(now))
+		{
+			return null;
+		}
+		if (status == PatchTimers.Status.GROWING_UNKNOWN)
+		{
+			return null;
 		}
 		if (checkHealthDue && type.isTreeLike())
 		{

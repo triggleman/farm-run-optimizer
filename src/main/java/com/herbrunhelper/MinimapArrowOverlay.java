@@ -42,6 +42,11 @@ class MinimapArrowOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
+		// Shortest Path draws its own path/arrow on the minimap. Don't draw a second one.
+		if (plugin.shortestPathActive())
+		{
+			return null;
+		}
 		WorldPoint target = plugin.getNavTarget();
 		Player player = client.getLocalPlayer();
 		if (target == null || player == null)

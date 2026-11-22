@@ -194,6 +194,33 @@ public enum Teleport
 		return l.length() > 9 ? l.substring(0, 9) : l;
 	}
 
+	/**
+	 * Charges written in the item's name, e.g. "Skills necklace(6)" or "Ring of wealth (5)".
+	 * Uncharged names score 0, so a charged version in the bank wins over a 1-charge one.
+	 */
+	static int chargesOf(String itemName)
+	{
+		if (itemName == null)
+		{
+			return 0;
+		}
+		int open = itemName.lastIndexOf('(');
+		int close = itemName.lastIndexOf(')');
+		if (open < 0 || close <= open + 1)
+		{
+			return 0;
+		}
+		String inside = itemName.substring(open + 1, close).trim();
+		try
+		{
+			return Integer.parseInt(inside);
+		}
+		catch (NumberFormatException e)
+		{
+			return 0;
+		}
+	}
+
 	public boolean matchesItem(String itemName)
 	{
 		String lower = itemName.toLowerCase();
@@ -213,14 +240,22 @@ public enum Teleport
 		{
 			case ITEM:
 			case TABLET:
+				String best = null;
+				int bestCharges = -1;
 				for (Map.Entry<String, Integer> e : ctx.owned.entrySet())
 				{
 					if (e.getValue() > 0 && matchesItem(e.getKey()))
 					{
-						return new Availability(true, "You own " + e.getKey(), e.getKey());
+						int charges = chargesOf(e.getKey());
+						if (charges > bestCharges)
+						{
+							bestCharges = charges;
+							best = e.getKey();
+						}
 					}
 				}
-				return new Availability(false, "You don't own one", null);
+				return best == null ? new Availability(false, "You don't own one", null)
+					: new Availability(true, "You own " + best, best);
 			case SPELL:
 				if (!ctx.standardSpellbook)
 				{

@@ -335,15 +335,11 @@ public interface HerbRunConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(keyName = "highlightBank", name = "Highlight in bank", description = "Outline the items to withdraw when your bank is open", position = 1, section = bankSection)
-	default boolean highlightBank()
+	@ConfigItem(keyName = "markWearables", name = "WEAR tags in inventory",
+		description = "Mark equippable run items in your inventory with an orange WEAR tag",
+		position = 3, section = bankSection)
+	default boolean markWearables()
 	{
 		return true;
-	}
-
-	@ConfigItem(keyName = "highlightColor", name = "Highlight colour", description = "Colour of the bank highlight", position = 2, section = bankSection)
-	default Color highlightColor()
-	{
-		return new Color(80, 220, 80);
 	}
 }

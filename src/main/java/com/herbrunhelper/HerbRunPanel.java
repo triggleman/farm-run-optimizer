@@ -101,6 +101,7 @@ public class HerbRunPanel extends PluginPanel
 	private RunPlan plan;
 	private Map<String, Integer> carried = Collections.emptyMap();
 	private Set<String> worn = Collections.emptySet();
+	private Set<String> wearItems = Collections.emptySet();
 	private Map<String, Integer> nameToId = Collections.emptyMap();
 	private FarmPatch nextPatch;
 	private Set<Teleport> disabled = EnumSet.noneOf(Teleport.class);
@@ -253,12 +254,13 @@ public class HerbRunPanel extends PluginPanel
 		this.runs = runs;
 	}
 
-	void setPlan(RunPlan plan, Map<String, Integer> carried, Set<String> worn, Map<String, Integer> nameToId,
-		Set<Teleport> disabled, boolean useSpells, boolean useTabs)
+	void setPlan(RunPlan plan, Map<String, Integer> carried, Set<String> worn, Set<String> wearItems,
+		Map<String, Integer> nameToId, Set<Teleport> disabled, boolean useSpells, boolean useTabs)
 	{
 		this.plan = plan;
 		this.carried = carried;
 		this.worn = worn;
+		this.wearItems = wearItems;
 		this.nameToId = nameToId;
 		this.disabled = disabled;
 		this.useSpells = useSpells;
@@ -643,7 +645,7 @@ public class HerbRunPanel extends PluginPanel
 		List<JComponent> tips = new ArrayList<>();
 		for (RunPlan.Withdrawal w : plan.withdrawals)
 		{
-			if (worn.contains(w.itemName))
+			if (worn.contains(w.itemName) || !wearItems.contains(w.itemName))
 			{
 				continue;
 			}
@@ -812,7 +814,7 @@ public class HerbRunPanel extends PluginPanel
 		{"highlightGardener", "Highlight gardener to pay", "Outline the gardener when you need to pay them"},
 		{"pointerArrow", "Arrow over target", "A steady arrow over the next patch, ring, tree or gardener"},
 		{"highlightInventory", "Highlight step items", "Outline the seed / compost / payment your current step needs"},
-		{"highlightBank", "Highlight in bank", "Outline what to withdraw when your bank is open"},
+		{"markWearables", "WEAR tags in inventory", "Mark equippable run items with an orange WEAR tag"},
 		{"notifyReady", "Notify when ready", "Notification when a patch finishes growing"},
 		{"notifyDisease", "Notify diseased/dead", "Notification when a patch is found diseased or dead"},
 		{"showReadyOverlay", "Run-ready box", "Small on-screen box showing which runs are ready"},

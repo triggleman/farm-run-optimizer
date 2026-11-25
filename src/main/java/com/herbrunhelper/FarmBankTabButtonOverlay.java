@@ -12,23 +12,22 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 
 /**
- * A small growing-garden attention effect around the bank's Farm run button while its tab is
- * closed: a breathing green halo, a slow ring of tiny leaves and a few golden fireflies rising
- * from the button.
+ * The growing-garden attention effect around the Farm run bank tab button while the tab is
+ * closed: a breathing green halo, a slow ring of tiny leaves and a few golden fireflies.
  *
  * By Romte1, from his pull request #1 (FarmBankButtonOverlay.java), used with his permission.
  */
-class FarmBankButtonOverlay extends Overlay
+class FarmBankTabButtonOverlay extends Overlay
 {
 	private static final Color LEAF = new Color(120, 230, 90);
 	private static final Color GOLD = new Color(255, 215, 90);
 	private static final Color SPORE = new Color(220, 255, 170);
 
-	private final FarmBankButton button;
+	private final FarmBankTabButton button;
 	private final HerbRunConfig config;
 
 	@Inject
-	FarmBankButtonOverlay(FarmBankButton button, HerbRunConfig config)
+	FarmBankTabButtonOverlay(FarmBankTabButton button, HerbRunConfig config)
 	{
 		this.button = button;
 		this.config = config;
@@ -39,11 +38,11 @@ class FarmBankButtonOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!config.bankTabGlow())
+		if (!config.bankTabGlow() || button.isActive())
 		{
 			return null;
 		}
-		Rectangle bounds = button.attentionBounds();
+		Rectangle bounds = button.bounds();
 		if (bounds == null || bounds.width <= 0 || bounds.height <= 0)
 		{
 			return null;

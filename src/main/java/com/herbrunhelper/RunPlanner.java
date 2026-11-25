@@ -21,6 +21,11 @@ public final class RunPlanner
 		public final Set<PatchType> runs = EnumSet.of(PatchType.HERB, PatchType.TREE);
 		public boolean useCompost = true;
 		public boolean bringRake = true;
+		/**
+		 * Patches known to have no weeds (something growing, a stump, or dead): no rake needed
+		 * there. Patches not in here might be weedy, so a rake is brought if any are on the run.
+		 */
+		public Set<FarmPatch> weedFree = EnumSet.noneOf(FarmPatch.class);
 		public boolean payGardeners = true;
 		public boolean bankKnown = true;
 		public int inventorySlots = 28;
@@ -61,7 +66,7 @@ public final class RunPlanner
 	private static final String[][] WEAR_SLOTS = {
 		{"Magic secateurs", "Dramen staff", "Lunar staff"},
 		{"Skills necklace", "Digsite pendant", "Pendant of ates", "Xeric's talisman"},
-		{"Farming cape", "Ardougne cloak", "Hunter cape"},
+		{"Farming cape", "Ardougne cloak", "Hunter cape", "Construct. cape", "Max cape"},
 		{"Explorer's ring"},
 	};
 
@@ -215,7 +220,8 @@ public final class RunPlanner
 			// A walk only works if the patch it starts from is on this run.
 			return r.anchor == null || included.contains(r.anchorPatch());
 		}
-		return plan.availability.get(r.teleport).available && !ctx.disabled.contains(r.teleport);
+		return r.houseOk(ctx.houseLocation)
+			&& plan.availability.get(r.teleport).available && !ctx.disabled.contains(r.teleport);
 	}
 
 	private static RunPlan.RouteStep pickTeleport(FarmPatch patch, RunPlan plan, Teleport.Context ctx,
@@ -294,7 +300,16 @@ public final class RunPlanner
 
 		if (chosen == null)
 		{
+			// Suggest a normal teleport, not a house portal you may not have.
 			FarmPatch.Route best = patch.getRoutes().get(0);
+			for (FarmPatch.Route r : patch.getRoutes())
+			{
+				if (r.house == null)
+				{
+					best = r;
+					break;
+				}
+			}
 			return new RunPlan.RouteStep(patch, null, "No teleport available (best: " + best.describe() + ")", null, false);
 		}
 		String item = null;
@@ -836,7 +851,7 @@ public final class RunPlanner
 			requireTool(plan, out, owned, "Seed dibber");
 		}
 		requireTool(plan, out, owned, "Spade");
-		if (options.bringRake)
+		if (options.bringRake && mightHaveWeeds(plan, options))
 		{
 			requireTool(plan, out, owned, "Rake");
 		}
@@ -951,10 +966,24 @@ public final class RunPlanner
 		return out;
 	}
 
+	/** True if any stop still to do could have weeds (so the rake is worth carrying). */
+	static boolean mightHaveWeeds(RunPlan plan, Options options)
+	{
+		for (RunPlan.RouteStep s : plan.route)
+		{
+			if (!s.done && !options.weedFree.contains(s.patch))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static void requireTool(RunPlan plan, List<RunPlan.Withdrawal> out, Map<String, Integer> owned, String tool)
 	{
 		out.add(new RunPlan.Withdrawal(tool, 1, ""));
-		if (owned.getOrDefault(tool, 0) <= 0)
+		// Before the bank's been seen this session, the "open your bank" warning covers it.
+		if (plan.bankKnown && owned.getOrDefault(tool, 0) <= 0)
 		{
 			plan.warnings.add("You don't seem to own a " + tool + " (unless it's in a tool leprechaun store).");
 		}

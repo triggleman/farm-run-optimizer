@@ -24,6 +24,7 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -48,7 +49,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.18.2";
+	static final String VERSION = "1.19.0";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -267,6 +268,19 @@ public class HerbRunPanel extends PluginPanel
 		rebuildPlan();
 	}
 
+	private HouseLocation houseLocation = HouseLocation.NONE;
+	private Consumer<HouseLocation> onHouseLocation = h -> { };
+
+	void setHouseLocation(HouseLocation h)
+	{
+		houseLocation = h == null ? HouseLocation.NONE : h;
+	}
+
+	void setOnHouseLocation(Consumer<HouseLocation> listener)
+	{
+		onHouseLocation = listener;
+	}
+
 	void setSpriteManager(net.runelite.client.game.SpriteManager sm)
 	{
 		this.spriteManager = sm;
@@ -289,6 +303,8 @@ public class HerbRunPanel extends PluginPanel
 				return 33;
 			case CAMELOT_SPELL:
 				return 37;
+			case HOUSE_SPELL:
+				return 355;
 			case ARDOUGNE_SPELL:
 				return 54;
 			case TROLLHEIM_SPELL:
@@ -1356,6 +1372,7 @@ public class HerbRunPanel extends PluginPanel
 			"Teleport with standard spellbook spells. Runes get added to the bank list.", onUseSpells), 0);
 		col.addRow(optionBox("Use teleport tabs", useTabs,
 			"Use teleport tablets. If spells are on too, tabs are only used where you can't cast the spell.", onUseTabs), 4);
+		col.addRow(houseRow(), 4);
 		JCheckBox all = new JCheckBox("Show all travel methods", showAllTravel);
 		all.setOpaque(false);
 		all.setFocusPainted(false);
@@ -1391,6 +1408,36 @@ public class HerbRunPanel extends PluginPanel
 			col.addRow(grid, 4);
 		}
 		return col;
+	}
+
+	/** "House: [location]" so Teleport to House, house tabs and the Construction cape can be used. */
+	private JComponent houseRow()
+	{
+		JPanel row = new JPanel(new BorderLayout(6, 0));
+		row.setOpaque(false);
+		JLabel label = new JLabel("House");
+		label.setFont(FontManager.getRunescapeSmallFont());
+		label.setForeground(Color.WHITE);
+		JComboBox<HouseLocation> box = new JComboBox<>(HouseLocation.values());
+		box.setSelectedItem(houseLocation);
+		box.setFont(FontManager.getRunescapeSmallFont());
+		box.setFocusable(false);
+		String tip = "Where your house portal is. Teleport to House and house tabs get used for patches "
+			+ "near it. A Construction cape works at every portal.";
+		box.setToolTipText(tip);
+		label.setToolTipText(tip);
+		box.addActionListener(e ->
+		{
+			HouseLocation picked = (HouseLocation) box.getSelectedItem();
+			if (picked != null && picked != houseLocation)
+			{
+				houseLocation = picked;
+				onHouseLocation.accept(picked);
+			}
+		});
+		row.add(label, BorderLayout.WEST);
+		row.add(box, BorderLayout.CENTER);
+		return row;
 	}
 
 	private JCheckBox optionBox(String text, boolean selected, String tooltip, Consumer<Boolean> onChange)

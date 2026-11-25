@@ -15,7 +15,11 @@
 
 ## Patch notes
 
-**Latest: 1.18.2**
+**Latest: 1.19.0**
+- **Your house as a travel option:** set your house location and Teleport to House, house tabs or the Construction cape get used for nearby patches (Hosidius, Taverley, Brimhaven, Yanille, Rimmington, Aldarin).
+- **Locus Oasis fix:** Shortest Path no longer stops short of the hardwood patch on your first visit.
+- **Rake only when needed**, and no "you don't own a…" warnings before you've opened your bank.
+
 - **New look:** new logo, sidebar icon and panel banner.
 - **Romte1's Farm run bank button** in the bank's title bar opens the run view.
 - **Bank view polish:** Romte1's animated bank button, smaller labels with a little space under each item, and wider spacing between items.

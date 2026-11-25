@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.19.0 (2026-11-24)
+- **Your house as a travel option.** Pick where your house portal is under **House** in the panel's Travel section (or "House location" in Settings). Teleport to House (40 Magic), house teleport tablets and the Construction cape are then used for the patches near it:
+  - **Rimmington:** the bush patch.
+  - **Taverley:** the tree patch.
+  - **Hosidius:** the herb patch, both allotments and the spirit tree.
+  - **Brimhaven:** the fruit tree, the spirit tree and the Tai Bwo Wannai calquat.
+  - **Yanille:** the hops patch.
+  - **Aldarin:** the hops patch.
+  The Construction cape (or max cape) can teleport to any house portal, so it's used at all of these whatever your house location. Directions say to leave by the portal when the spell or tablet lands you inside.
+- **First visit to the Locus Oasis hardwood patch:** Shortest Path is sent to a walkable tile next to the patch instead of the patch itself, so it no longer stops with "Destination could not be reached" before you've been there. Marcellus is now recognised under all of his NPC ids, so his spot is learned for next time.
+- **Rake only when it's needed:** the rake is only on the "Take with you" list when a patch on the run might have weeds. Hardwood and fruit tree runs where every tree is growing don't ask for one.
+- **No false "you don't own a…" warnings:** until you've opened your bank since logging in, the plugin just says "Open your bank once" instead of claiming tools like the rake are missing.
+
 ## 1.18.2 (2026-11-23)
 - **New art.** A new GitHub banner, a new Plugin Hub logo, a "Farm Run Optimizer" banner at the top of the side panel, and a new sidebar icon (the sprout in a circle of arrows).
 

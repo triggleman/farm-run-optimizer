@@ -41,6 +41,9 @@ public enum Teleport
 	AMULET_OF_GLORY(Kind.ITEM, "Amulet of glory (Al Kharid)", 1712, 0, null, null, null, "Amulet of glory("),
 	RING_OF_WEALTH(Kind.ITEM, "Ring of wealth (Miscellania)", 11980, 0, null, null, null, "Ring of wealth ("),
 	DIGSITE_PENDANT(Kind.ITEM, "Digsite pendant", 11194, 0, null, null, null, "Digsite pendant"),
+	// Your house: the cape (and max cape) can teleport to any house portal, wherever the house is.
+	HOUSE_CAPE(Kind.ITEM, "Construction cape (house portals)", 9789, 0, null, null, null,
+		"Construct. cape", "Max cape"),
 
 	// ---- Teleport tablets
 	VARROCK_TAB(Kind.TABLET, "Varrock teleport tablet", 8007, 0, null, null, null, "Varrock teleport"),
@@ -52,11 +55,14 @@ public enum Teleport
 	FENKENSTRAIN_TAB(Kind.TABLET, "Fenkenstrain's castle teleport", 19621, 0, null, null, null, "Fenkenstrain's castle teleport"),
 	HARMONY_TAB(Kind.TABLET, "Harmony island teleport", 19625, 0, null, null, null, "Harmony island teleport"),
 	BRIMHAVEN_TAB(Kind.TABLET, "Brimhaven teleport tablet", 11745, 0, null, null, null, "Brimhaven teleport"),
+	// Lands at your own house (inside, or at its portal if your house options say so).
+	HOUSE_TAB(Kind.TABLET, "House teleport tablet", 8013, 0, null, null, null, "Teleport to house"),
 
 	// ---- Standard spellbook spells (runes are added to the bank list)
 	VARROCK_SPELL(Kind.SPELL, "Varrock Teleport", -1, 25, null, null, "Law rune:1,Air rune:3,Fire rune:1"),
 	LUMBRIDGE_SPELL(Kind.SPELL, "Lumbridge Teleport", -1, 31, null, null, "Law rune:1,Air rune:3,Earth rune:1"),
 	FALADOR_SPELL(Kind.SPELL, "Falador Teleport", -1, 37, null, null, "Law rune:1,Air rune:3,Water rune:1"),
+	HOUSE_SPELL(Kind.SPELL, "Teleport to House", -1, 40, null, null, "Law rune:1,Air rune:1,Earth rune:1"),
 	CAMELOT_SPELL(Kind.SPELL, "Camelot Teleport", -1, 45, null, null, "Law rune:1,Air rune:5"),
 	KOUREND_SPELL(Kind.SPELL, "Kourend Castle Teleport", -1, 48, "Client of Kourend", null, null),
 	ARDOUGNE_SPELL(Kind.SPELL, "Ardougne Teleport", -1, 51, "Plague City", null, "Law rune:2,Water rune:2"),
@@ -134,6 +140,14 @@ public enum Teleport
 		public boolean useTabs = true;
 		/** Use fairy rings back-to-back once you're on the network. */
 		public boolean chainFairyRings = true;
+		/** Where your house portal is: house teleports only help at patches near it. */
+		public HouseLocation houseLocation = HouseLocation.NONE;
+	}
+
+	/** Teleports that land at your house (the cape can also pick any portal). */
+	public boolean isHouse()
+	{
+		return this == HOUSE_SPELL || this == HOUSE_TAB || this == HOUSE_CAPE;
 	}
 
 	private final Kind kind;

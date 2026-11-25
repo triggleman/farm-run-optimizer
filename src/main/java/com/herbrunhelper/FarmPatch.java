@@ -7,7 +7,9 @@
  */
 package com.herbrunhelper;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,6 +38,7 @@ public enum FarmPatch
 		via(Teleport.FALADOR_SPELL, "run east into the park")),
 	TAVERLEY_TREE("Taverley tree", PatchType.TREE, Requirement.NONE, 2936, 3438, r(11573, 11829), 4771, null, "Falador West bank",
 		walk("Walk west from Falador park to Taverley", "FALADOR_TREE"),
+		house(HouseLocation.TAVERLEY, "run south-east through Taverley", false),
 		via(Teleport.FALADOR_TAB, "run west to Taverley"),
 		via(Teleport.FALADOR_SPELL, "run west to Taverley")),
 	FALADOR_HERB("Falador herb", PatchType.HERB, Requirement.NONE, 3058, 3311, r(12083), 4774, null, "Falador East bank",
@@ -67,6 +70,7 @@ public enum FarmPatch
 		via(Teleport.CAMELOT_TAB, "head through Catherby to the fruit tree patch"),
 		via(Teleport.CAMELOT_SPELL, "head through Catherby to the fruit tree patch")),
 	BRIMHAVEN_FRUIT("Brimhaven fruit tree", PatchType.FRUIT_TREE, Requirement.NONE, 2765, 3213, r(11058, 11057), 4771, null, "Ardougne South bank",
+		house(HouseLocation.BRIMHAVEN, "run north to the fruit tree patch", true),
 		via(Teleport.BRIMHAVEN_TAB, "patch is just north"),
 		via(Teleport.ARDOUGNE_TAB, "boat from Ardougne docks to Brimhaven (30 coins), patch north-west"),
 		via(Teleport.ARDOUGNE_SPELL, "boat from Ardougne docks to Brimhaven (30 coins), patch north-west")),
@@ -84,6 +88,7 @@ public enum FarmPatch
 	HOSIDIUS_HERB("Hosidius herb", PatchType.HERB, Requirement.NONE, 1738, 3550, r(6967, 6711), 4774, "AKR", "Hosidius kitchen bank",
 		via(Teleport.XERICS_TALISMAN, "Xeric's Glade, run south-west"),
 		via(Teleport.KHAREDSTS_MEMOIRS, "Hosidius, run south-east"),
+		house(HouseLocation.HOSIDIUS, "run north to the farming patches", false),
 		via(Teleport.FAIRY_AKR, "run west"),
 		via(Teleport.KOUREND_SPELL, "run south-east")),
 	FARMING_GUILD_TREE("Farming Guild tree", PatchType.TREE, Requirement.FARMING_65, 1232, 3736, r(4922, 4665, 4666, 4667, 4921, 4923, 5177, 5178, 5179), 7905, "CIR", "Farming Guild bank",
@@ -145,6 +150,7 @@ public enum FarmPatch
 		via(Teleport.VARROCK_TAB, "run south-west past the Champions' Guild"),
 		via(Teleport.VARROCK_SPELL, "run south-west past the Champions' Guild")),
 	RIMMINGTON_BUSH("Rimmington bush", PatchType.BUSH, Requirement.NONE, 2938, 3223, r(11570, 11826), 4771, null, "Draynor Village bank",
+		house(HouseLocation.RIMMINGTON, "run west to the bush patch", true),
 		via(Teleport.EXPLORERS_RING, "cabbage patch teleport, run south-west to Rimmington"),
 		via(Teleport.FAIRY_AIQ, "run north to Rimmington"),
 		via(Teleport.FALADOR_TAB, "run south to Rimmington"),
@@ -172,12 +178,14 @@ public enum FarmPatch
 		via(Teleport.CAMELOT_TAB, "run west past Seers' Village"),
 		via(Teleport.CAMELOT_SPELL, "run west past Seers' Village")),
 	YANILLE_HOPS("Yanille hops", PatchType.HOPS, Requirement.NONE, 2572, 3102, r(10288), 4771, "CIQ", "Yanille bank",
+		house(HouseLocation.YANILLE, "run north-east to the hops patch", true),
 		via(Teleport.FAIRY_CIQ, "run south to Yanille")),
 	ENTRANA_HOPS("Entrana hops", PatchType.HOPS, Requirement.NONE, 2812, 3334, r(11060, 11316), 4771, null, null,
 		via(Teleport.FALADOR_TAB, "run south to Port Sarim, monks' boat to Entrana (no weapons or armour)"),
 		via(Teleport.FALADOR_SPELL, "run south to Port Sarim, monks' boat to Entrana (no weapons or armour)"),
 		via(Teleport.EXPLORERS_RING, "cabbage patch teleport, run south to Port Sarim, monks' boat (no weapons or armour)")),
 	ALDARIN_HOPS("Aldarin hops", PatchType.HOPS, Requirement.CHILDREN_OF_THE_SUN, 1367, 2938, r(5421, 5165, 5166, 5422, 5677, 5678), 4771, null, null,
+		house(HouseLocation.ALDARIN, "walk to the hops patch", true),
 		via(Teleport.CIVITAS_SPELL, "quetzal from Civitas illa Fortis to Aldarin, run north")),
 
 	// ---- Cactus (1 seed; check health, pick, dig up to replant)
@@ -194,6 +202,7 @@ public enum FarmPatch
 	// ---- Calquat (sapling; check health, pay the gardener to clear)
 	TAI_BWO_WANNAI_CALQUAT("Tai Bwo Wannai calquat", PatchType.CALQUAT, Requirement.NONE, 2795, 3102, r(11056), 4771, "CKR", null,
 		via(Teleport.FAIRY_CKR, "run north to Tai Bwo Wannai"),
+		house(HouseLocation.BRIMHAVEN, "run south to Tai Bwo Wannai", false),
 		via(Teleport.BRIMHAVEN_TAB, "run south to Tai Bwo Wannai")),
 	KASTORI_CALQUAT("Kastori calquat", PatchType.CALQUAT, Requirement.CHILDREN_OF_THE_SUN, 1366, 3033, r(5423, 5167, 5424), 4771, null, null,
 		walk("Walk from the Kastori fruit tree", "KASTORI_FRUIT"),
@@ -211,6 +220,7 @@ public enum FarmPatch
 		via(Teleport.RING_OF_WEALTH, "run east over the bridge to Etceteria")),
 	BRIMHAVEN_SPIRIT("Brimhaven spirit tree", PatchType.SPIRIT_TREE, Requirement.NONE, 2802, 3203, r(11058, 11057), 4772, null, "Ardougne South bank",
 		walk("Walk east from the Brimhaven fruit tree", "BRIMHAVEN_FRUIT"),
+		house(HouseLocation.BRIMHAVEN, "run north-east", false),
 		via(Teleport.BRIMHAVEN_TAB, "run east"),
 		via(Teleport.ARDOUGNE_TAB, "boat from Ardougne docks to Brimhaven (30 coins), run east"),
 		via(Teleport.ARDOUGNE_SPELL, "boat from Ardougne docks to Brimhaven (30 coins), run east")),
@@ -218,6 +228,7 @@ public enum FarmPatch
 		walk("Walk west from the Hosidius herb patch", "HOSIDIUS_HERB"),
 		via(Teleport.XERICS_TALISMAN, "Xeric's Glade, run south-west"),
 		via(Teleport.KHAREDSTS_MEMOIRS, "Hosidius, run south-west"),
+		house(HouseLocation.HOSIDIUS, "run north-west", false),
 		via(Teleport.KOUREND_SPELL, "run south")),
 	GUILD_SPIRIT("Farming Guild spirit tree", PatchType.SPIRIT_TREE, Requirement.FARMING_85, 1253, 3750, r(4922, 4665, 4666, 4667, 4921, 4923, 5177, 5178, 5179), 4771, "CIR", "Farming Guild bank",
 		walk("Into the guild's top tier", "FARMING_GUILD_FRUIT"),
@@ -297,6 +308,7 @@ public enum FarmPatch
 		walk("Next to the herb patch", "HOSIDIUS_HERB"),
 		via(Teleport.XERICS_TALISMAN, "Xeric's Glade, run south-west"),
 		via(Teleport.KHAREDSTS_MEMOIRS, "Hosidius, run south-east"),
+		house(HouseLocation.HOSIDIUS, "run north to the farming patches", false),
 		via(Teleport.FAIRY_AKR, "run west"),
 		via(Teleport.KOUREND_SPELL, "run south-east")),
 	HOSIDIUS_ALLOTMENT_B("Hosidius allotment (south-west)", PatchType.ALLOTMENT, Requirement.NONE, 1732, 3555,
@@ -305,6 +317,7 @@ public enum FarmPatch
 		walk("Next to the herb patch", "HOSIDIUS_HERB"),
 		via(Teleport.XERICS_TALISMAN, "Xeric's Glade, run south-west"),
 		via(Teleport.KHAREDSTS_MEMOIRS, "Hosidius, run south-east"),
+		house(HouseLocation.HOSIDIUS, "run north to the farming patches", false),
 		via(Teleport.FAIRY_AKR, "run west"),
 		via(Teleport.KOUREND_SPELL, "run south-east")),
 	VARLAMORE_ALLOTMENT_A("Varlamore (Ortus Farm) allotment (north)", PatchType.ALLOTMENT, Requirement.CHILDREN_OF_THE_SUN, 1584, 3104,
@@ -352,13 +365,30 @@ public enum FarmPatch
 		public final String anchor;
 		/** True if this beats chaining a fairy ring (e.g. Ardougne cloak straight to the patch). */
 		public final boolean beatsFairy;
+		/**
+		 * For house teleports: the house portal this route starts from. The spell and tablet only
+		 * work when your house is there; the Construction cape can pick any portal.
+		 */
+		public final HouseLocation house;
 
 		Route(Teleport teleport, String note, String anchor, boolean beatsFairy)
+		{
+			this(teleport, note, anchor, beatsFairy, null);
+		}
+
+		Route(Teleport teleport, String note, String anchor, boolean beatsFairy, HouseLocation house)
 		{
 			this.teleport = teleport;
 			this.note = note;
 			this.anchor = anchor;
 			this.beatsFairy = beatsFairy;
+			this.house = house;
+		}
+
+		/** Whether this route works with your house where it is. */
+		public boolean houseOk(HouseLocation yours)
+		{
+			return house == null || teleport == Teleport.HOUSE_CAPE || house == yours;
 		}
 
 		public FarmPatch anchorPatch()
@@ -389,6 +419,36 @@ public enum FarmPatch
 	private static Route walk(String note, String anchor)
 	{
 		return new Route(null, note, anchor, false);
+	}
+
+	/** Placeholder for "from the house portal at X": expanded into cape, spell and tablet routes. */
+	private static Route house(HouseLocation where, String note, boolean beatsFairy)
+	{
+		return new Route(null, note, null, beatsFairy, where);
+	}
+
+	/** House placeholders become three real routes: Construction cape first (free), then spell, then tablet. */
+	private static List<Route> expand(Route[] routes)
+	{
+		List<Route> out = new ArrayList<>();
+		for (Route r : routes)
+		{
+			if (r.teleport == null && r.house != null)
+			{
+				// The cape picks the portal directly; the spell and tablet land in your house
+				// (unless your house options say "outside"), so you leave by its portal.
+				String where = r.house.getDisplayName();
+				out.add(new Route(Teleport.HOUSE_CAPE, where + " house portal, " + r.note, null, r.beatsFairy, r.house));
+				String leave = "leave by the " + where + " portal, " + r.note;
+				out.add(new Route(Teleport.HOUSE_SPELL, leave, null, r.beatsFairy, r.house));
+				out.add(new Route(Teleport.HOUSE_TAB, leave, null, r.beatsFairy, r.house));
+			}
+			else
+			{
+				out.add(r);
+			}
+		}
+		return Collections.unmodifiableList(out);
 	}
 
 	public enum Requirement
@@ -460,7 +520,7 @@ public enum FarmPatch
 		this.varbit = varbit;
 		this.nearbyRing = nearbyRing;
 		this.bank = bank;
-		this.routes = Arrays.asList(routes);
+		this.routes = expand(routes);
 	}
 
 	public String getDisplayName()

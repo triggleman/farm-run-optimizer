@@ -250,6 +250,11 @@ public class HerbRunPlugin extends Plugin
 			this::setSetting);
 		panel.setOnClearHistory(this::clearHistory);
 		panel.setSpriteManager(spriteManager);
+		panel.setOnHouseLocation(h ->
+		{
+			configManager.setConfiguration(HerbRunConfig.GROUP, "houseLocation", h);
+			dirty = true;
+		});
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Farm Run Optimizer")
@@ -495,10 +500,9 @@ public class HerbRunPlugin extends Plugin
 			return null;
 		}
 		WorldPoint t = tileFor(patch);
-		int wanted = Gardeners.idFor(patch);
 		for (NPC npc : gardeners)
 		{
-			if (npc.getId() == wanted)
+			if (Gardeners.isGardenerOf(patch, npc.getId()))
 			{
 				return npc; // this patch's own gardener
 			}
@@ -1692,9 +1696,17 @@ public class HerbRunPlugin extends Plugin
 		}
 		for (FarmPatch p : FarmPatch.values())
 		{
-			if (timers.getStatus(p) == PatchTimers.Status.DISEASED)
+			PatchTimers.Status status = timers.getStatus(p);
+			if (status == PatchTimers.Status.DISEASED)
 			{
 				options.diseased.add(p);
+			}
+			// Something growing, a stump or a dead crop: no weeds to rake there.
+			if (timers.get(p) != null || status == PatchTimers.Status.GROWING_UNKNOWN
+				|| status == PatchTimers.Status.STUMP || status == PatchTimers.Status.DISEASED
+				|| status == PatchTimers.Status.DEAD)
+			{
+				options.weedFree.add(p);
 			}
 		}
 		FarmingContract c = contract;
@@ -1768,6 +1780,7 @@ public class HerbRunPlugin extends Plugin
 		ctx.useSpells = config.useSpells();
 		ctx.useTabs = config.useTabs();
 		ctx.chainFairyRings = config.chainFairyRings();
+		ctx.houseLocation = config.houseLocation();
 
 		RunPlan plan = RunPlanner.plan(level, unlocked, owned, options);
 		lastPlan = plan;
@@ -1892,6 +1905,7 @@ public class HerbRunPlugin extends Plugin
 		settings.put("showTimers", config.showTimers());
 		settings.put("showTravel", config.showTravel());
 		String spNotice = shortestPathNotice();
+		HouseLocation houseNow = config.houseLocation();
 		SwingUtilities.invokeLater(() ->
 		{
 			panel.setShortestPathNotice(spNotice);
@@ -1900,6 +1914,7 @@ public class HerbRunPlugin extends Plugin
 			panel.setPicks(offCrops, offPatches);
 			panel.setExtras(profitCopy, herbYield, historyRuns, currentRun, totalProfit, contractNow);
 			panel.setHerbYields(yieldCopy, noteCopy);
+			panel.setHouseLocation(houseNow);
 			panel.setPlan(plan, carried, worn, nameToId, disabled, useSpells, useTabs);
 		});
 	}
@@ -2263,6 +2278,12 @@ public class HerbRunPlugin extends Plugin
 		{
 			learnApproach(next);
 			WorldPoint approach = Gardeners.sharedAcrossTypes(next) ? null : approachTiles.get(next);
+			int[] walkTo = Gardeners.walkTo(next);
+			if (approach == null && walkTo != null)
+			{
+				// Not learned yet: a walkable tile beside the patch, so Shortest Path can reach it.
+				approach = new WorldPoint(walkTo[0], walkTo[1], walkTo[2]);
+			}
 			if (approach != null)
 			{
 				pathTarget = approach; // the patch itself can't be walked on
@@ -2347,10 +2368,9 @@ public class HerbRunPlugin extends Plugin
 		{
 			return;
 		}
-		int wanted = Gardeners.idFor(patch);
 		for (NPC npc : gardeners)
 		{
-			if (npc.getId() == wanted && npc.getWorldLocation() != null)
+			if (Gardeners.isGardenerOf(patch, npc.getId()) && npc.getWorldLocation() != null)
 			{
 				approachTiles.put(patch, npc.getWorldLocation());
 				saveTileMap(APPROACH_KEY, approachTiles);

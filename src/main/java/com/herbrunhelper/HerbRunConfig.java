@@ -186,6 +186,15 @@ public interface HerbRunConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(keyName = "houseLocation", name = "House location",
+		description = "Where your player-owned house portal is. Teleport to House and house tabs are used for patches near it "
+			+ "(e.g. Hosidius, Taverley, Brimhaven, Yanille, Rimmington, Aldarin). A Construction cape works at every portal.",
+		position = 1, section = navSection)
+	default HouseLocation houseLocation()
+	{
+		return HouseLocation.NONE;
+	}
+
 	@ConfigItem(keyName = "chainFairyRings", name = "Chain fairy rings",
 		description = "Once you're at a fairy ring, do every fairy-ring patch back to back (e.g. cloak to Ardougne, then BLR > ALQ > AKR > AJP)",
 		position = 1, section = navSection)

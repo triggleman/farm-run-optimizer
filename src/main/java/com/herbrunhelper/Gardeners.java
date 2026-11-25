@@ -68,8 +68,25 @@ final class Gardeners
 		put(FarmPatch.GUILD_REDWOOD, 8536);
 	}
 
+	/**
+	 * A walkable tile right beside a patch, for patches whose own tile can't be stood on, used
+	 * until the gardener's spot has been learned. Checked in game.
+	 */
+	private static final Map<FarmPatch, int[]> WALK_TO = new EnumMap<>(FarmPatch.class);
+
+	static
+	{
+		WALK_TO.put(FarmPatch.LOCUS_OASIS_HARDWOOD, new int[]{1686, 2974, 0});
+	}
+
 	private Gardeners()
 	{
+	}
+
+	/** Built-in walkable tile beside the patch (x, y, plane), or null. */
+	static int[] walkTo(FarmPatch patch)
+	{
+		return WALK_TO.get(patch);
 	}
 
 	private static void put(FarmPatch patch, int id)
@@ -103,5 +120,42 @@ final class Gardeners
 	static int idFor(FarmPatch patch)
 	{
 		return IDS.getOrDefault(patch, -1);
+	}
+
+	/** Other ids the same gardener can spawn as (e.g. Marcellus changes with his quest). */
+	private static final Map<FarmPatch, int[]> ALTERNATES = new EnumMap<>(FarmPatch.class);
+
+	static
+	{
+		// Marcellus: 13401 is his quest-state parent; 12935 / 12936 are what actually spawns.
+		ALTERNATES.put(FarmPatch.LOCUS_OASIS_HARDWOOD, new int[]{12936, 12935});
+		for (int[] ids : ALTERNATES.values())
+		{
+			for (int id : ids)
+			{
+				ALL.add(id);
+			}
+		}
+	}
+
+	/** Whether an NPC id is this patch's gardener. */
+	static boolean isGardenerOf(FarmPatch patch, int npcId)
+	{
+		if (npcId == idFor(patch))
+		{
+			return true;
+		}
+		int[] alt = ALTERNATES.get(patch);
+		if (alt != null)
+		{
+			for (int id : alt)
+			{
+				if (id == npcId)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

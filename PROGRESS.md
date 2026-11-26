@@ -4,7 +4,7 @@ Made by ToadFx. Last updated: 2026-11-26.
 
 ## Status
 
-Version **1.20.1**. Live on the Plugin Hub.
+Version **1.21.0**. Live on the Plugin Hub.
 
 ## Done
 
@@ -17,6 +17,7 @@ Version **1.20.1**. Live on the Plugin Hub.
 - [x] Runs kept separate (one finished before the next), or combined with the setting off
 - [x] Your own stop order with up / down buttons, travel re-planned for it, reset to automatic
 - [x] Flower run (8 patches, 6 flowers)
+- [x] Live countdowns on run headers, "Next up" progress bars, one notification per ready run
 - [x] Spells / tabs checkboxes; click any teleport item to stop using it
 - [x] Pick which herbs and trees to plant, and which patches to visit
 - [x] Seeds go to the patches you use first; patches you can't plant (and don't use) are left off

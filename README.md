@@ -15,7 +15,12 @@
 
 ## Patch notes
 
-**Latest: 1.20.1**
+**Latest: 1.21.0**
+- **Countdown on every run's header**: "5/7 ready" or the time until the next patch, without opening the run.
+- **"Next up"** at the top of the panel: your runs, soonest first, with progress bars.
+- **One notification per run** when it's fully ready, plus a chat line at login for runs that finished while you were away.
+
+**1.20.1**
 - **Panel summary and timers only show runs you have turned on.**
 
 **1.20.0**

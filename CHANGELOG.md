@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.21.0 (2026-11-26)
+- **Countdown on every run's header.** In the Runs section, each run you do shows its live status without opening it: "5/7 ready" in green or the time until the next patch ("59m 59s", "1h 59m") in yellow. Hover for details.
+- **"Next up" at the top of the panel.** Replaces the old summary: every run you do, soonest first, with a progress bar of how far it has grown. Ready runs sit on top with a full green bar. Hover a run to see when the next patch and the whole run will be ready.
+- **One notification per run.** When every patch of a run you do is ready, you get one RuneLite notification and a chat message ("Your herb run is ready (7 patches)"), instead of one notification per patch. At login, one chat line lists runs that finished while you were away. Runs you've turned off never notify. The setting is "Notify when a run is ready".
+
 ## 1.20.1 (2026-11-26)
 - **Only your runs in the panel summary.** The summary at the top of the panel ("Herbs: ready in 15m", "Cactus: 1 need you"...) and the patch timers now only list runs you have turned on. Before, any patch the game had told the plugin about showed up, even for runs you don't do (an empty patch you walked past, an old spirit tree).
 

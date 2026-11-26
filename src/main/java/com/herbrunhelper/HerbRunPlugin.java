@@ -353,6 +353,8 @@ public class HerbRunPlugin extends Plugin
 				bankSeen = false;
 				timersLoaded = false;
 				notifiedReady.clear();
+				runWasReady.clear();
+				toldReadyAtLogin = false;
 				clearNavigation();
 				break;
 			default:
@@ -711,7 +713,10 @@ public class HerbRunPlugin extends Plugin
 			ticksSincePatchSync = 0;
 			syncNearbyPatches();
 		}
-		checkReadyNotifications();
+		if (timersLoaded)
+		{
+			checkReadyNotifications(); // after your saved timers are in, so login doesn't look like "just ready"
+		}
 		trackReadyPatches();
 		if (timersLoaded)
 		{
@@ -2621,24 +2626,68 @@ public class HerbRunPlugin extends Plugin
 		return navRingLabel;
 	}
 
+	/** Runs that were fully ready last time we looked (missing = not looked at yet since login). */
+	private final EnumMap<PatchType, Boolean> runWasReady = new EnumMap<>(PatchType.class);
+	private boolean toldReadyAtLogin;
+
 	private void checkReadyNotifications()
 	{
-		if (!config.notifyReady())
-		{
-			return;
-		}
 		long now = System.currentTimeMillis();
-		for (Map.Entry<FarmPatch, PatchTimers.Planting> e : timers.snapshot().entrySet())
+		Map<FarmPatch, PatchTimers.Planting> planted = timers.snapshot();
+		for (Map.Entry<FarmPatch, PatchTimers.Planting> e : planted.entrySet())
 		{
 			if (e.getValue().isReady(now) && notifiedReady.add(e.getKey()))
 			{
-				// Only notify for patches that became ready while you were playing.
-				if (now - e.getValue().readyAtMillis() < 60_000L)
-				{
-					notifier.notify(e.getKey().getDisplayName() + " (" + e.getValue().crop.getDisplayName() + ") is ready!");
-				}
-				dirty = true;
+				dirty = true; // a patch just finished: refresh the panel
 			}
+		}
+
+		// One notification per run, when every patch of a run you do is ready.
+		Set<FarmPatch> off = readSet(config.disabledPatches(), FarmPatch.class);
+		List<FarmPatch> patches = new ArrayList<>();
+		for (FarmPatch p : FarmPatch.values())
+		{
+			if (!off.contains(p))
+			{
+				patches.add(p);
+			}
+		}
+		List<String> readyNow = new ArrayList<>();
+		for (PatchType type : runs())
+		{
+			RunStatus r = RunStatus.of(type, patches, planted, timers::getStatus, now);
+			boolean all = r.allReady();
+			Boolean before = runWasReady.put(type, all);
+			if (all)
+			{
+				readyNow.add(type.getDisplayName().toLowerCase());
+			}
+			// Only when it becomes ready while you play (not for runs already ready at login).
+			if (all && Boolean.FALSE.equals(before) && config.notifyReady())
+			{
+				String msg = "Your " + type.getDisplayName().toLowerCase() + " run is ready ("
+					+ r.ready + (r.ready == 1 ? " patch)" : " patches)");
+				notifier.notify(msg);
+				chat(msg);
+			}
+		}
+		// At login, one chat line for runs that finished while you were away.
+		if (!toldReadyAtLogin && client.getGameState() == GameState.LOGGED_IN)
+		{
+			toldReadyAtLogin = true;
+			if (!readyNow.isEmpty() && config.notifyReady())
+			{
+				chat("Ready to harvest: " + String.join(", ", readyNow) + ".");
+			}
+		}
+	}
+
+	private void chat(String message)
+	{
+		if (client.getGameState() == GameState.LOGGED_IN)
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+				"<col=0099ff>Farm Run Optimizer:</col> " + message, null);
 		}
 	}
 

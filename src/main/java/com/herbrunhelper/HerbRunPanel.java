@@ -50,7 +50,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.20.1";
+	static final String VERSION = "1.21.0";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -392,7 +392,20 @@ public class HerbRunPanel extends PluginPanel
 				byType.put(type, patches);
 			}
 		}
-		byType.forEach((type, patches) -> col.addRow(summaryRow(type, patches, planted, now), 2));
+		// "Next up": each run you do, soonest first, with how far it has grown.
+		List<RunStatus> next = new ArrayList<>();
+		byType.forEach((type, patches) -> next.add(RunStatus.of(type, patches, planted, timers::getStatus, now)));
+		next.removeIf(r -> r.tracked == 0);
+		next.sort(java.util.Comparator.comparingLong(RunStatus::sortKey));
+		if (!next.isEmpty())
+		{
+			col.addRow(sectionTitle("Next up"), 2);
+			for (RunStatus r : next)
+			{
+				col.addRow(nextUpRow(r), 4);
+			}
+		}
+		refreshRunHeaders(planted, now);
 
 		if (!byType.isEmpty() && setting("showTimers"))
 		{
@@ -429,6 +442,10 @@ public class HerbRunPanel extends PluginPanel
 			{
 				continue;
 			}
+			if (offPatches.contains(p))
+			{
+				continue;
+			}
 			boolean inRoute = plan.route.stream().anyMatch(s -> s.patch == p);
 			if (inRoute || planted.containsKey(p) || timers.getStatus(p) != null)
 			{
@@ -438,56 +455,69 @@ public class HerbRunPanel extends PluginPanel
 		return out;
 	}
 
-	private JComponent summaryRow(PatchType type, List<FarmPatch> patches,
-		Map<FarmPatch, PatchTimers.Planting> planted, long now)
+	/** "Herbs  5/7 ready" or "Trees  5h 04m", with a bar showing how far it has grown. */
+	private JComponent nextUpRow(RunStatus r)
 	{
-		int ready = 0;
-		long soonest = Long.MAX_VALUE;
-		int tracked = 0;
-		for (FarmPatch p : patches)
+		Color color = r.ready > 0 ? GREEN : r.soonestLeft >= 0 ? YELLOW : MUTED;
+		String text = r.ready > 0 ? "\u2713 " + r.shortText() : r.shortText();
+		String tip = r.ready > 0
+			? r.ready + " of " + r.tracked + " patches need you"
+				+ (r.soonestLeft >= 0 ? " (next one in " + PatchTimers.formatDuration(r.soonestLeft) + ")" : "")
+			: r.soonestLeft >= 0
+				? "Next patch ready in " + PatchTimers.formatDuration(r.soonestLeft)
+					+ (r.lastLeft > r.soonestLeft ? ", all " + r.tracked + " in " + PatchTimers.formatDuration(r.lastLeft) : "")
+				: "Growing (no timer yet: it starts when you plant or pass by)";
+		Column c = new Column();
+		JPanel top = row(label(r.type.getDisplayName(), Color.WHITE, false), label(text, color, false));
+		top.setToolTipText(tip);
+		c.addRow(top, 2);
+		ProgressBar bar = new ProgressBar(r.progress, color);
+		bar.setToolTipText(tip);
+		c.addRow(bar, 0);
+		return c;
+	}
+
+	/** A thin bar: how far the next patch of a run has grown. */
+	private static final class ProgressBar extends JComponent
+	{
+		private final double value;
+		private final Color color;
+
+		ProgressBar(double value, Color color)
 		{
-			PatchTimers.Planting pl = planted.get(p);
-			if (pl == null)
-			{
-				PatchTimers.Status st = timers.getStatus(p);
-				if (st != null)
-				{
-					tracked++;
-					if (st != PatchTimers.Status.GROWING_UNKNOWN)
-					{
-						ready++;
-					}
-				}
-				continue;
-			}
-			tracked++;
-			if (pl.isReady(now))
-			{
-				ready++;
-			}
-			else
-			{
-				soonest = Math.min(soonest, pl.millisLeft(now));
-			}
+			this.value = value;
+			this.color = color;
+			setPreferredSize(new Dimension(10, 5));
+			setMinimumSize(new Dimension(10, 5));
+			setMaximumSize(new Dimension(Integer.MAX_VALUE, 5));
 		}
-		String status;
-		Color color;
-		if (ready > 0)
+
+		@Override
+		protected void paintComponent(java.awt.Graphics g)
 		{
-			status = ready + " need you";
-			color = GREEN;
+			int w = getWidth();
+			int h = getHeight();
+			g.setColor(new Color(55, 55, 55));
+			g.fillRect(0, 0, w, h);
+			g.setColor(color);
+			g.fillRect(0, 0, (int) Math.round(w * value), h);
 		}
-		else if (soonest != Long.MAX_VALUE)
+	}
+
+	/** Run headers whose status shows a live countdown ("5/7 ready", "15m 29s"). */
+	private final Map<PatchType, JLabel> runHeaderStatus = new EnumMap<>(PatchType.class);
+
+	private void refreshRunHeaders(Map<FarmPatch, PatchTimers.Planting> planted, long now)
+	{
+		runHeaderStatus.forEach((type, label) ->
 		{
-			status = "ready in " + PatchTimers.formatDuration(soonest);
-			color = YELLOW;
-		}
-		else
-		{
-			status = tracked > 0 ? "growing" : "not planted yet";
-			color = MUTED;
-		}
-		return row(label(type.getDisplayName() + ":", Color.WHITE, false), label(status, color, false));
+			RunStatus r = RunStatus.of(type, patchesOfType(type, planted), planted, timers::getStatus, now);
+			String text = r.shortText();
+			label.setText(text.isEmpty() ? "on" : text);
+			label.setForeground(r.ready > 0 ? GREEN : r.soonestLeft >= 0 ? YELLOW : GREEN);
+			label.setToolTipText(r.ready > 0 ? r.ready + " of " + r.tracked + " patches need you"
+				: r.soonestLeft >= 0 ? "Next patch ready in " + PatchTimers.formatDuration(r.soonestLeft) : null);
+		});
 	}
 
 	private JComponent timerGroup(PatchType type, List<FarmPatch> allPatches,
@@ -611,6 +641,7 @@ public class HerbRunPanel extends PluginPanel
 			return;
 		}
 		long now = System.currentTimeMillis();
+		runHeaderStatus.clear();
 		Column col = new Column();
 		col.setBorder(new EmptyBorder(6, 0, 4, 0));
 
@@ -766,6 +797,7 @@ public class HerbRunPanel extends PluginPanel
 		{
 			runsCol.addRow(runSection(t, now), 3);
 		}
+		refreshRunHeaders(timers.snapshot(), now); // fill in the countdowns straight away
 		replace(runsSection, runsCol);
 	}
 
@@ -1040,6 +1072,10 @@ public class HerbRunPanel extends PluginPanel
 		leftSide.add(onBox, BorderLayout.WEST);
 		leftSide.add(name, BorderLayout.CENTER);
 		JLabel right = label(status, !levelOk ? MUTED : on ? GREEN : MUTED, false);
+		if (on && levelOk)
+		{
+			runHeaderStatus.put(type, right); // live countdown, refreshed every second
+		}
 		JPanel header = row(leftSide, right);
 		header.setOpaque(true);
 		header.setBackground(CARD);

@@ -184,7 +184,10 @@ public interface HerbRunConfig extends Config
 		return false;
 	}
 
-	@ConfigItem(keyName = "notifyReady", name = "Notify when ready", description = "Send a notification when a tracked patch is fully grown", position = 8, section = runSection)
+	@ConfigItem(keyName = "notifyReady", name = "Notify when a run is ready",
+		description = "One notification and chat message when every patch of a run you do is ready, "
+			+ "and a chat line at login for runs that finished while you were away",
+		position = 8, section = runSection)
 	default boolean notifyReady()
 	{
 		return true;

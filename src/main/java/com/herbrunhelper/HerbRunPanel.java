@@ -50,7 +50,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.20.0";
+	static final String VERSION = "1.20.1";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -382,6 +382,10 @@ public class HerbRunPanel extends PluginPanel
 		Map<PatchType, List<FarmPatch>> byType = new EnumMap<>(PatchType.class);
 		for (PatchType type : PatchType.values())
 		{
+			if (!runs.contains(type))
+			{
+				continue; // runs you've turned off stay out of the summary and timers
+			}
 			List<FarmPatch> patches = patchesOfType(type, planted);
 			if (!patches.isEmpty())
 			{

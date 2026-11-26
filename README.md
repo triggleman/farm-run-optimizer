@@ -15,7 +15,10 @@
 
 ## Patch notes
 
-**Latest: 1.20.0**
+**Latest: 1.20.1**
+- **Panel summary and timers only show runs you have turned on.**
+
+**1.20.0**
 - **Runs stay separate:** one run is finished before the next starts (turn it off in Settings for the old combined route).
 - **Your own order:** move any stop up or down with ▲ / ▼; travel is re-planned for the order you pick, and "Reset" goes back to automatic.
 - **Flower run:** marigold to white lily at all eight flower patches.

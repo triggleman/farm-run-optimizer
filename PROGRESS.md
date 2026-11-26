@@ -4,7 +4,7 @@ Made by ToadFx. Last updated: 2026-11-26.
 
 ## Status
 
-Version **1.20.0**. Live on the Plugin Hub.
+Version **1.20.1**. Live on the Plugin Hub.
 
 ## Done
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.20.1 (2026-11-26)
+- **Only your runs in the panel summary.** The summary at the top of the panel ("Herbs: ready in 15m", "Cactus: 1 need you"...) and the patch timers now only list runs you have turned on. Before, any patch the game had told the plugin about showed up, even for runs you don't do (an empty patch you walked past, an old spirit tree).
+
 ## 1.20.0 (2026-11-26)
 - **Runs stay separate.** When you do more than one run (say allotments and trees), the plugin now finishes one before starting the next instead of mixing their stops. Within a run, a stop only links to stops of the same run. The runs go in the panel's order (herbs, allotments, flowers, trees...). Turn "Keep runs separate" off in Settings to get the old combined route back.
 - **Put the stops in your own order.** Every stop card has ▲ and ▼ buttons. Move a stop and the plan follows your order from then on, and it's saved for next time. Travel is picked again for each stop based on where you're coming from: a teleport when you're coming from somewhere else, "Walk over from the…" when the stop before is right next to it, and fairy ring directions that follow your order. "Stops in your own order · Reset" above the stops goes back to the automatic order.

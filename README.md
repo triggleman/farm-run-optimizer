@@ -15,7 +15,10 @@
 
 ## Patch notes
 
-**Latest: 1.21.1**
+**Latest: 1.21.2**
+- **Timers always at the top**, including crops growing in runs you've turned off.
+
+**1.21.1**
 - **Green = the whole run is ready.** Until the last patch is ready, runs show "5/7 · 14m 59s" in yellow.
 
 **1.21.0**

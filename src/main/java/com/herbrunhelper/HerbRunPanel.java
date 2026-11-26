@@ -50,7 +50,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.21.1";
+	static final String VERSION = "1.21.2";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -382,11 +382,13 @@ public class HerbRunPanel extends PluginPanel
 		Map<PatchType, List<FarmPatch>> byType = new EnumMap<>(PatchType.class);
 		for (PatchType type : PatchType.values())
 		{
+			List<FarmPatch> patches = patchesOfType(type, planted);
 			if (!runs.contains(type))
 			{
-				continue; // runs you've turned off stay out of the summary and timers
+				// A run you've turned off only shows for crops you planted (with a timer),
+				// not for empty, weedy or old untracked patches you walked past.
+				patches.removeIf(p -> !planted.containsKey(p));
 			}
-			List<FarmPatch> patches = patchesOfType(type, planted);
 			if (!patches.isEmpty())
 			{
 				byType.put(type, patches);
@@ -397,13 +399,14 @@ public class HerbRunPanel extends PluginPanel
 		byType.forEach((type, patches) -> next.add(RunStatus.of(type, patches, planted, timers::getStatus, now)));
 		next.removeIf(r -> r.tracked == 0);
 		next.sort(java.util.Comparator.comparingLong(RunStatus::sortKey));
-		if (!next.isEmpty())
+		col.addRow(sectionTitle("Next up"), 2);
+		if (next.isEmpty())
 		{
-			col.addRow(sectionTitle("Next up"), 2);
-			for (RunStatus r : next)
-			{
-				col.addRow(nextUpRow(r), 4);
-			}
+			col.addRow(wrapped("Nothing growing yet. Plant a run and its timer shows here.", MUTED), 4);
+		}
+		for (RunStatus r : next)
+		{
+			col.addRow(nextUpRow(r), 4);
 		}
 		refreshRunHeaders(planted, now);
 

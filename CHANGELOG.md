@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.21.2 (2026-11-26)
+- **"Next up" and the patch timers are always at the top.** Runs you've turned off still show there when something you planted is growing in them; only empty, weedy or untracked patches stay hidden. With nothing growing at all, "Next up" says so instead of the top being empty.
+
 ## 1.21.1 (2026-11-26)
 - **Green means the whole run is ready.** A run's "Next up" bar and header only turn green when its last patch is ready. While some patches are still growing they stay yellow and show how many are ready plus the time until the last one ("5/7 · 14m 59s"). The bar now fills towards the whole run being ready, not the first patch, and "Next up" is sorted the same way.
 

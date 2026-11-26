@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.0 (2026-11-26)
+- **Runs stay separate.** When you do more than one run (say allotments and trees), the plugin now finishes one before starting the next instead of mixing their stops. Within a run, a stop only links to stops of the same run. The runs go in the panel's order (herbs, allotments, flowers, trees...). Turn "Keep runs separate" off in Settings to get the old combined route back.
+- **Put the stops in your own order.** Every stop card has ▲ and ▼ buttons. Move a stop and the plan follows your order from then on, and it's saved for next time. Travel is picked again for each stop based on where you're coming from: a teleport when you're coming from somewhere else, "Walk over from the…" when the stop before is right next to it, and fairy ring directions that follow your order. "Stops in your own order · Reset" above the stops goes back to the automatic order.
+- **Flower run.** Marigold, rosemary, nasturtium, woad, limpwurt and white lily. It covers the flower patches at Falador, Catherby, Ardougne, Morytania, Hosidius, Ortus Farm (Varlamore), the Farming Guild (45+) and Kastori, with timers, steps, XP, seeds and Farming Guild flower contracts. Flowers can't be protected, so there's nothing to pay.
+
 ## 1.19.0 (2026-11-24)
 - **Your house as a travel option.** Pick where your house portal is under **House** in the panel's Travel section (or "House location" in Settings). Teleport to House (40 Magic), house teleport tablets and the Construction cape are then used for the patches near it:
   - **Rimmington:** the bush patch.

@@ -131,6 +131,8 @@ public final class FarmingContract
 				return FarmPatch.FARMING_GUILD_FRUIT;
 			case ALLOTMENT:
 				return FarmPatch.GUILD_ALLOTMENT_A;
+			case FLOWER:
+				return FarmPatch.GUILD_FLOWER;
 			case BUSH:
 				return FarmPatch.GUILD_BUSH;
 			case CACTUS:

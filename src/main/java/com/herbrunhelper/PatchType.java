@@ -8,6 +8,7 @@ public enum PatchType
 {
 	HERB("Herbs", "HERB", 20, "includeHerbs", Clear.HARVEST),
 	ALLOTMENT("Allotments", "ALLOTMENT", 10, "includeAllotments", Clear.HARVEST),
+	FLOWER("Flowers", "FLOWER", 5, "includeFlowers", Clear.HARVEST),
 	TREE("Trees", "TREE", 40, "includeTrees", Clear.GARDENER),
 	FRUIT_TREE("Fruit trees", "FRUIT_TREE", 160, "includeFruitTrees", Clear.GARDENER),
 	HARDWOOD("Hardwood", "HARDWOOD_TREE", 640, "includeHardwood", Clear.GARDENER),
@@ -89,10 +90,10 @@ public enum PatchType
 			|| this == SPIRIT_TREE || this == CELASTRUS || this == REDWOOD;
 	}
 
-	/** Gardeners can be paid to protect these crops. */
+	/** Gardeners can be paid to protect these crops (not herbs or flowers). */
 	public boolean hasGardenerPayment()
 	{
-		return this != HERB;
+		return this != HERB && this != FLOWER;
 	}
 
 	/** Seeds that stack in one inventory slot (not saplings). */
@@ -122,6 +123,8 @@ public enum PatchType
 				return "herb";
 			case ALLOTMENT:
 				return "allotment";
+			case FLOWER:
+				return "flower";
 			case TREE:
 				return "tree";
 			case FRUIT_TREE:

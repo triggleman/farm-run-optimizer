@@ -73,6 +73,8 @@ public final class RunPlan
 
 	public int farmingLevel;
 	public boolean bankKnown;
+	/** True when the stops follow the player's own order (up / down buttons). */
+	public boolean customOrder;
 	/** Best crop you can plant, per patch type. */
 	public final Map<PatchType, Crop> best = new EnumMap<>(PatchType.class);
 	/** Next crop you'll unlock, per patch type. */

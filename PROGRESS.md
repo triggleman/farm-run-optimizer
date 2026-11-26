@@ -1,10 +1,10 @@
 # Farm Run Optimizer - Progress
 
-Made by ToadFx. Last updated: 2026-11-24.
+Made by ToadFx. Last updated: 2026-11-26.
 
 ## Status
 
-Version **1.19.0**. Live on the Plugin Hub.
+Version **1.20.0**. Live on the Plugin Hub.
 
 ## Done
 
@@ -14,6 +14,9 @@ Version **1.19.0**. Live on the Plugin Hub.
 - [x] Fastest teleport you own per patch; Ardougne cloak 2+ only; ectophial for Morytania
 - [x] Fairy rings chained back to back from the nearest ring, with the code to dial
 - [x] Your house: Teleport to House, house tabs and the Construction cape for patches near your house portal
+- [x] Runs kept separate (one finished before the next), or combined with the setting off
+- [x] Your own stop order with up / down buttons, travel re-planned for it, reset to automatic
+- [x] Flower run (8 patches, 6 flowers)
 - [x] Spells / tabs checkboxes; click any teleport item to stop using it
 - [x] Pick which herbs and trees to plant, and which patches to visit
 - [x] Seeds go to the patches you use first; patches you can't plant (and don't use) are left off

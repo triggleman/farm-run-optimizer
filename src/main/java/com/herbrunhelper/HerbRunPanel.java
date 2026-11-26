@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -49,7 +50,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.19.0";
+	static final String VERSION = "1.20.0";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -266,6 +267,15 @@ public class HerbRunPanel extends PluginPanel
 		this.useTabs = useTabs;
 		rebuildLive();
 		rebuildPlan();
+	}
+
+	private java.util.function.BiConsumer<FarmPatch, Integer> onMoveStop = (p, d) -> { };
+	private Runnable onResetOrder = () -> { };
+
+	void setOnMoveStop(java.util.function.BiConsumer<FarmPatch, Integer> listener, Runnable reset)
+	{
+		onMoveStop = listener;
+		onResetOrder = reset;
 	}
 
 	private HouseLocation houseLocation = HouseLocation.NONE;
@@ -689,6 +699,10 @@ public class HerbRunPanel extends PluginPanel
 
 		// Every stop in order: done ones as green ticked rows, the rest as full cards
 		// (gold = next), with bank stops where the inventory runs out.
+		if (plan.customOrder)
+		{
+			col.addRow(customOrderRow(), 4);
+		}
 		boolean anyTodo = false;
 		int number = 0;
 		boolean nextShown = false;
@@ -718,7 +732,7 @@ public class HerbRunPanel extends PluginPanel
 				col.addRow(sectionTitle("Then"), 2);
 				thenShown = true;
 			}
-			col.addRow(stopCard(step, number, !nextShown, now), 4);
+			col.addRow(stopCard(step, number, !nextShown, now, idx, plan.route.size()), 4);
 			nextShown = true;
 			anyTodo = true;
 		}
@@ -751,7 +765,7 @@ public class HerbRunPanel extends PluginPanel
 		replace(runsSection, runsCol);
 	}
 
-	private JComponent stopCard(RunPlan.RouteStep step, int number, boolean first, long now)
+	private JComponent stopCard(RunPlan.RouteStep step, int number, boolean first, long now, int idx, int total)
 	{
 		String travel = esc(step.teleportLabel);
 		if (step.teleport != null && step.teleport.getFairyCode() != null)
@@ -794,6 +808,8 @@ public class HerbRunPanel extends PluginPanel
 		{
 			items.add(new RunPlan.Withdrawal(step.paymentItem, step.paymentQuantity, "gardener payment"));
 		}
+		JPanel bottom = new JPanel(new BorderLayout(4, 0));
+		bottom.setOpaque(false);
 		if (!items.isEmpty())
 		{
 			JPanel strip = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
@@ -802,9 +818,78 @@ public class HerbRunPanel extends PluginPanel
 			{
 				strip.add(smallIcon(w));
 			}
-			card.add(strip, BorderLayout.SOUTH);
+			bottom.add(strip, BorderLayout.CENTER);
 		}
+		// Up / down: do the run in your own order.
+		JPanel move = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
+		move.setOpaque(false);
+		move.add(moveButton("\u25B2", "Move this stop up", idx > 0, step.patch, -1));
+		move.add(moveButton("\u25BC", "Move this stop down", idx < total - 1, step.patch, 1));
+		bottom.add(move, BorderLayout.EAST);
+		card.add(bottom, BorderLayout.SOUTH);
 		return card;
+	}
+
+	private JComponent moveButton(String arrow, String tip, boolean enabled, FarmPatch patch, int delta)
+	{
+		JLabel b = new JLabel(arrow, SwingConstants.CENTER);
+		b.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+		b.setPreferredSize(new Dimension(18, 16));
+		b.setOpaque(true);
+		b.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		b.setForeground(enabled ? Color.WHITE : new Color(90, 90, 90));
+		if (enabled)
+		{
+			b.setToolTipText(tip);
+			b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			b.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mouseClicked(MouseEvent e)
+				{
+					onMoveStop.accept(patch, delta);
+				}
+
+				@Override
+				public void mouseEntered(MouseEvent e)
+				{
+					b.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+				}
+
+				@Override
+				public void mouseExited(MouseEvent e)
+				{
+					b.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+				}
+			});
+		}
+		return b;
+	}
+
+	/** "Your own order · Reset" above the stops once you've moved one. */
+	private JComponent customOrderRow()
+	{
+		JPanel row = new JPanel(new BorderLayout(6, 0));
+		row.setOpaque(false);
+		JLabel label = new JLabel("Stops in your own order");
+		label.setFont(FontManager.getRunescapeSmallFont());
+		label.setForeground(new Color(127, 212, 255));
+		JLabel reset = new JLabel("Reset");
+		reset.setFont(FontManager.getRunescapeSmallFont());
+		reset.setForeground(GOLD);
+		reset.setToolTipText("Go back to the automatic (fastest) order");
+		reset.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		reset.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{
+				onResetOrder.run();
+			}
+		});
+		row.add(label, BorderLayout.CENTER);
+		row.add(reset, BorderLayout.EAST);
+		return row;
 	}
 
 	private JComponent nowBanner()
@@ -824,6 +909,7 @@ public class HerbRunPanel extends PluginPanel
 		{"bankSupplyTab", "Farm run bank tab", "A tab on the bank title bar that shows just the run's items to withdraw"},
 		{"gameHintArrow", "Game hint arrow", "The game's yellow arrow (also on the minimap) over the next patch, ring, tree or gardener"},
 		{"pathMinigameTeleports", "Path: minigame teleports", "Let Shortest Path's line use minigame teleports like Rat Pits"},
+		{"keepRunsSeparate", "Keep runs separate", "Finish one run (herbs, allotments, trees...) before starting the next, instead of mixing their stops"},
 		{"highlightPatch", "Highlight next patch", "Outline the next patch on the ground"},
 		{"highlightGardener", "Highlight gardener to pay", "Outline the gardener when you need to pay them"},
 		{"pointerArrow", "Arrow over target", "A steady arrow over the next patch, ring, tree or gardener"},
@@ -966,6 +1052,7 @@ public class HerbRunPanel extends PluginPanel
 		body.setBorder(new EmptyBorder(8, 3, 10, 2));
 		body.addRow(sectionTitle(type == PatchType.HERB ? "Herbs to plant"
 			: type == PatchType.ALLOTMENT ? "Crops to plant (3 seeds each)"
+			: type == PatchType.FLOWER ? "Flowers to plant"
 			: type == PatchType.HOPS ? "Hops to plant (4 seeds each, jute 3)"
 			: !type.usesSaplings() ? type.getDisplayName() + " to plant" : "Trees to plant"), 4);
 		JPanel crops = new JPanel(new GridLayout(0, 4, 6, 6));

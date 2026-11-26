@@ -43,6 +43,13 @@ public final class RunPlanner
 		public Set<FarmPatch> diseased = EnumSet.noneOf(FarmPatch.class);
 		/** Only plan the patches that are ready (or were just done this run). */
 		public boolean onlyReady = false;
+		/** Finish one run (herbs, trees...) before starting the next, instead of mixing stops. */
+		public boolean keepRunsSeparate = true;
+		/**
+		 * The player's own stop order (moved with the up / down buttons). Empty = automatic.
+		 * Stops not in the list keep their automatic place, after the listed ones.
+		 */
+		public List<FarmPatch> customOrder = new ArrayList<>();
 		/** Patches with something still growing: millis until ready, or -1 if unknown. */
 		public Map<FarmPatch, Long> notReady = new java.util.EnumMap<>(FarmPatch.class);
 		/** Patches you've just harvested/planted on this run, kept on the list as done. */
@@ -162,12 +169,39 @@ public final class RunPlanner
 			}
 		}
 
-		List<RunPlan.RouteStep> picked = new ArrayList<>();
-		for (FarmPatch patch : included)
+		List<RunPlan.RouteStep> auto = new ArrayList<>();
+		if (options.keepRunsSeparate)
 		{
-			picked.add(pickTeleport(patch, plan, ctx, included));
+			// One run at a time, in the panel's order; walks only link stops of the same run.
+			for (PatchType t : PatchType.values())
+			{
+				Set<FarmPatch> mine = EnumSet.noneOf(FarmPatch.class);
+				for (FarmPatch p : included)
+				{
+					if (p.getType() == t)
+					{
+						mine.add(p);
+					}
+				}
+				List<RunPlan.RouteStep> picked = new ArrayList<>();
+				for (FarmPatch patch : mine)
+				{
+					picked.add(pickTeleport(patch, plan, ctx, mine));
+				}
+				auto.addAll(orderRoute(picked, ctx));
+			}
 		}
-		plan.route.addAll(orderRoute(picked, ctx));
+		else
+		{
+			List<RunPlan.RouteStep> picked = new ArrayList<>();
+			for (FarmPatch patch : included)
+			{
+				picked.add(pickTeleport(patch, plan, ctx, included));
+			}
+			auto.addAll(orderRoute(picked, ctx));
+		}
+		plan.route.addAll(options.customOrder.isEmpty() ? auto : customRoute(auto, plan, ctx, options.customOrder));
+		plan.customOrder = !options.customOrder.isEmpty();
 
 		if (plan.route.isEmpty())
 		{
@@ -207,7 +241,7 @@ public final class RunPlanner
 		}
 
 		List<RunPlan.Withdrawal> fixed = fixedItems(plan, owned, options, bottomless,
-			doing.contains(PatchType.HERB) || doing.contains(PatchType.ALLOTMENT));
+			doing.contains(PatchType.HERB) || doing.contains(PatchType.ALLOTMENT) || doing.contains(PatchType.FLOWER));
 		plan.estimatedXp = estimateXp(plan, options);
 		splitIntoTrips(plan, fixed, options);
 		return plan;
@@ -394,12 +428,82 @@ public final class RunPlanner
 			}
 		}
 
-		// Flatten and rewrite fairy directions based on where you're coming from.
-		List<RunPlan.RouteStep> out = new ArrayList<>();
-		RunPlan.RouteStep prev = null;
+		List<RunPlan.RouteStep> flat = new ArrayList<>();
 		for (List<RunPlan.RouteStep> b : ordered)
 		{
-			for (RunPlan.RouteStep s : b)
+			flat.addAll(b);
+		}
+		return fairyDirections(flat, startRing != null);
+	}
+
+	/**
+	 * Your own order: stops you've placed come first in that order, the rest follow in their
+	 * automatic order. Travel is picked again for each stop from where you're coming from, so a
+	 * "walk from the next patch" is only used when that patch really is the stop before.
+	 */
+	static List<RunPlan.RouteStep> customRoute(List<RunPlan.RouteStep> auto, RunPlan plan, Teleport.Context ctx,
+		List<FarmPatch> custom)
+	{
+		List<FarmPatch> order = new ArrayList<>();
+		Set<FarmPatch> onRun = EnumSet.noneOf(FarmPatch.class);
+		for (RunPlan.RouteStep s : auto)
+		{
+			onRun.add(s.patch);
+		}
+		for (FarmPatch p : custom)
+		{
+			if (onRun.contains(p) && !order.contains(p))
+			{
+				order.add(p);
+			}
+		}
+		for (RunPlan.RouteStep s : auto)
+		{
+			if (!order.contains(s.patch))
+			{
+				order.add(s.patch);
+			}
+		}
+		Map<FarmPatch, Crop> crops = new java.util.EnumMap<>(FarmPatch.class);
+		for (RunPlan.RouteStep s : auto)
+		{
+			if (s.crop != null)
+			{
+				crops.put(s.patch, s.crop);
+			}
+		}
+		List<RunPlan.RouteStep> out = new ArrayList<>();
+		FarmPatch prev = null;
+		for (FarmPatch p : order)
+		{
+			Set<FarmPatch> from = prev == null ? EnumSet.noneOf(FarmPatch.class) : EnumSet.of(prev);
+			RunPlan.RouteStep step = pickTeleport(p, plan, ctx, from);
+			if ((step.teleport != null || !step.hasTeleport) && prev != null && nextTo(prev, p))
+			{
+				// Same farm as the stop before (herb, then flower...): just walk over.
+				step = new RunPlan.RouteStep(p, null, "Walk over from the " + prev.getDisplayName(), null, true);
+				step.anchor = prev;
+			}
+			step.crop = crops.get(p);
+			out.add(step);
+			prev = p;
+		}
+		return fairyDirections(out, true);
+	}
+
+	/** Close enough to walk between (the patches of one farm, a guild tier). */
+	static boolean nextTo(FarmPatch a, FarmPatch b)
+	{
+		return Math.max(Math.abs(a.getX() - b.getX()), Math.abs(a.getY() - b.getY())) <= 20;
+	}
+
+	/** Rewrite fairy ring directions based on where you're coming from. */
+	private static List<RunPlan.RouteStep> fairyDirections(List<RunPlan.RouteStep> ordered, boolean walkToRing)
+	{
+		List<RunPlan.RouteStep> out = new ArrayList<>();
+		RunPlan.RouteStep prev = null;
+		{
+			for (RunPlan.RouteStep s : ordered)
 			{
 				RunPlan.RouteStep step = s;
 				if (isFairy(s))
@@ -411,7 +515,7 @@ public final class RunPlanner
 					{
 						from = "Back to the ring, dial " + code;
 					}
-					else if (prev != null && startRing != null && prev.patch.getNearbyRing() != null)
+					else if (prev != null && walkToRing && prev.patch.getNearbyRing() != null)
 					{
 						from = "Walk " + direction(prev.patch, FairyRings.tile(prev.patch.getNearbyRing()))
 							+ "to fairy ring " + prev.patch.getNearbyRing() + ", dial " + code;
@@ -535,6 +639,7 @@ public final class RunPlanner
 				: type == PatchType.TREE ? FarmPatch.FARMING_GUILD_TREE
 				: type == PatchType.FRUIT_TREE ? FarmPatch.FARMING_GUILD_FRUIT
 				: type == PatchType.ALLOTMENT ? FarmPatch.GUILD_ALLOTMENT_A
+				: type == PatchType.FLOWER ? FarmPatch.GUILD_FLOWER
 				: type == PatchType.BUSH ? FarmPatch.GUILD_BUSH
 				: type == PatchType.CACTUS ? FarmPatch.GUILD_CACTUS
 				: type == PatchType.CELASTRUS ? FarmPatch.GUILD_CELASTRUS

@@ -71,6 +71,12 @@ public final class FarmingXp
 		put(Crop.WHITEBERRIES, 78, 29, 437.5);
 		put(Crop.POISON_IVY, 120, 45, 675);
 		put(Crop.BARLEY, 8.5, 9.5, 0);
+		put(Crop.MARIGOLD, 8.5, 47, 0);
+		put(Crop.ROSEMARY, 12, 66.5, 0);
+		put(Crop.NASTURTIUM, 19.5, 111, 0);
+		put(Crop.WOAD, 20.5, 115.5, 0);
+		put(Crop.LIMPWURT, 21.5, 120, 0);
+		put(Crop.WHITE_LILY, 42, 250, 0);
 		put(Crop.HAMMERSTONE, 9, 10, 0);
 		put(Crop.ASGARNIAN, 10.9, 12, 0);
 		put(Crop.JUTE, 13, 14.5, 0);
@@ -114,6 +120,8 @@ public final class FarmingXp
 				return x[1] * herbYield;
 			case ALLOTMENT:
 				return x[1] * ALLOTMENT_YIELD;
+			case FLOWER:
+				return x[1]; // one harvest's worth, given when the patch is cleared
 			case HOPS:
 				return x[1] * HOPS_YIELD;
 			default:

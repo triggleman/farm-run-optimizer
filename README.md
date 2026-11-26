@@ -15,7 +15,12 @@
 
 ## Patch notes
 
-**Latest: 1.19.0**
+**Latest: 1.20.0**
+- **Runs stay separate:** one run is finished before the next starts (turn it off in Settings for the old combined route).
+- **Your own order:** move any stop up or down with ▲ / ▼; travel is re-planned for the order you pick, and "Reset" goes back to automatic.
+- **Flower run:** marigold to white lily at all eight flower patches.
+
+**1.19.0**
 - **Your house as a travel option:** set your house location and Teleport to House, house tabs or the Construction cape get used for nearby patches (Hosidius, Taverley, Brimhaven, Yanille, Rimmington, Aldarin).
 - **Locus Oasis fix:** Shortest Path no longer stops short of the hardwood patch on your first visit.
 - **Rake only when needed**, and no "you don't own a…" warnings before you've opened your bank.

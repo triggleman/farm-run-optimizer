@@ -44,6 +44,12 @@ public interface HerbRunConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(keyName = "includeFlowers", name = "Flower run", description = "Include flower patches (marigold up to white lily), next to the allotments", position = 4, section = runSection)
+	default boolean includeFlowers()
+	{
+		return false;
+	}
+
 	@ConfigItem(keyName = "includeHardwood", name = "Hardwood run", description = "Include hardwood patches (teak, mahogany, camphor, ironwood, rosewood)", position = 3, section = runSection)
 	default boolean includeHardwood()
 	{
@@ -114,6 +120,20 @@ public interface HerbRunConfig extends Config
 	default boolean onlyReady()
 	{
 		return true;
+	}
+
+	@ConfigItem(keyName = "keepRunsSeparate", name = "Keep runs separate",
+		description = "Finish one run (herbs, allotments, flowers, trees...) before starting the next, instead of mixing their stops",
+		position = 7, section = runSection)
+	default boolean keepRunsSeparate()
+	{
+		return true;
+	}
+
+	@ConfigItem(keyName = "customOrder", name = "", description = "", hidden = true)
+	default String customOrder()
+	{
+		return "";
 	}
 
 	@ConfigItem(keyName = "profitFirst", name = "Most profitable herb first", description = "Plant the herb seed with the best GE profit per patch first, instead of the highest level", position = 7, section = runSection)

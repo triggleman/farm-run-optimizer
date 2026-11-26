@@ -73,6 +73,14 @@ public enum Crop
 	// Hops: 4 seeds (jute 3).
 	BARLEY(PatchType.HOPS, "Barley", 3, "Barley seed", 5, "Compost", 3, 6006),
 	HAMMERSTONE(PatchType.HOPS, "Hammerstone", 4, "Hammerstone seed", 5, "Marigolds", 1, 5994),
+	// Flowers: 5-minute ticks, 1 seed, can't be protected (OSRS Wiki). Nothing to pay.
+	MARIGOLD(PatchType.FLOWER, "Marigold", 2, "Marigold seed", 5, null, 0, 6010),
+	ROSEMARY(PatchType.FLOWER, "Rosemary", 11, "Rosemary seed", 5, null, 0, 6014),
+	NASTURTIUM(PatchType.FLOWER, "Nasturtium", 24, "Nasturtium seed", 5, null, 0, 6012),
+	WOAD(PatchType.FLOWER, "Woad", 25, "Woad seed", 5, null, 0, 1793),
+	LIMPWURT(PatchType.FLOWER, "Limpwurt", 26, "Limpwurt seed", 5, null, 0, 225),
+	WHITE_LILY(PatchType.FLOWER, "White lily", 58, "White lily seed", 5, null, 0, 22932),
+
 	ASGARNIAN(PatchType.HOPS, "Asgarnian", 8, "Asgarnian seed", 6, "Onions(10)", 1, 5996),
 	JUTE(PatchType.HOPS, "Jute", 13, "Jute seed", 6, "Barley malt", 6, 5931),
 	YANILLIAN(PatchType.HOPS, "Yanillian", 16, "Yanillian seed", 7, "Tomatoes(5)", 1, 5998),

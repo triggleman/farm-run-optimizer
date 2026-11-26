@@ -12,7 +12,7 @@ import re
 import sys
 from pathlib import Path
 
-TYPES = ["HERB", "ALLOTMENT", "TREE", "FRUIT_TREE", "HARDWOOD_TREE", "BUSH", "HOPS", "CACTUS", "CALQUAT",
+TYPES = ["HERB", "ALLOTMENT", "FLOWER", "TREE", "FRUIT_TREE", "HARDWOOD_TREE", "BUSH", "HOPS", "CACTUS", "CALQUAT",
          "SPIRIT_TREE", "CELASTRUS", "REDWOOD"]
 
 

@@ -22,7 +22,8 @@ public final class StopWork
 		{
 			if (ready)
 			{
-				out.add("Harvest the " + planting.crop.getDisplayName().toLowerCase() + " (note them at the leprechaun)");
+				out.add("Harvest the " + planting.crop.getDisplayName().toLowerCase()
+					+ (type == PatchType.FLOWER ? "" : " (note them at the leprechaun)"));
 			}
 			else if (status == PatchTimers.Status.DISEASED)
 			{

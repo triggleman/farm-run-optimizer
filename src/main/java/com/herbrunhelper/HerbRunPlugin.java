@@ -250,6 +250,11 @@ public class HerbRunPlugin extends Plugin
 			this::setSetting);
 		panel.setOnClearHistory(this::clearHistory);
 		panel.setSpriteManager(spriteManager);
+		panel.setOnMoveStop(this::moveStop, () ->
+		{
+			configManager.unsetConfiguration(HerbRunConfig.GROUP, "customOrder");
+			dirty = true;
+		});
 		panel.setOnHouseLocation(h ->
 		{
 			configManager.setConfiguration(HerbRunConfig.GROUP, "houseLocation", h);
@@ -1599,6 +1604,8 @@ public class HerbRunPlugin extends Plugin
 				return config.includeHardwood();
 			case ALLOTMENT:
 				return config.includeAllotments();
+			case FLOWER:
+				return config.includeFlowers();
 			case BUSH:
 				return config.includeBushes();
 			case HOPS:
@@ -1614,6 +1621,66 @@ public class HerbRunPlugin extends Plugin
 			default:
 				return config.includeRedwood();
 		}
+	}
+
+	/** The saved stop order: patch names separated by commas (unknown names skipped). */
+	private static List<FarmPatch> readOrder(String saved)
+	{
+		List<FarmPatch> out = new ArrayList<>();
+		if (saved == null || saved.isEmpty())
+		{
+			return out;
+		}
+		for (String name : saved.split(","))
+		{
+			try
+			{
+				out.add(FarmPatch.valueOf(name.trim()));
+			}
+			catch (IllegalArgumentException ignored)
+			{
+				// a patch from an older version
+			}
+		}
+		return out;
+	}
+
+	/** Up / down on a stop card: swap it with its neighbour and save that as your order. */
+	private void moveStop(FarmPatch patch, int delta)
+	{
+		RunPlan plan = lastPlan;
+		if (plan == null)
+		{
+			return;
+		}
+		List<FarmPatch> order = new ArrayList<>();
+		for (RunPlan.RouteStep s : plan.route)
+		{
+			order.add(s.patch);
+		}
+		int i = order.indexOf(patch);
+		int j = i + delta;
+		if (i < 0 || j < 0 || j >= order.size())
+		{
+			return;
+		}
+		order.set(i, order.get(j));
+		order.set(j, patch);
+		// Keep patches saved earlier that aren't on this run, so a later run still uses them.
+		for (FarmPatch p : readOrder(config.customOrder()))
+		{
+			if (!order.contains(p))
+			{
+				order.add(p);
+			}
+		}
+		StringBuilder sb = new StringBuilder();
+		for (FarmPatch p : order)
+		{
+			sb.append(sb.length() == 0 ? "" : ",").append(p.name());
+		}
+		configManager.setConfiguration(HerbRunConfig.GROUP, "customOrder", sb.toString());
+		dirty = true;
 	}
 
 	private void recompute()
@@ -1666,6 +1733,8 @@ public class HerbRunPlugin extends Plugin
 		options.useCompost = config.useCompost();
 		options.bringRake = config.bringRake();
 		options.onlyReady = config.onlyReady();
+		options.keepRunsSeparate = config.keepRunsSeparate();
+		options.customOrder = readOrder(config.customOrder());
 		options.herbYield = history.averageHerbYield();
 		for (FarmPatch p : FarmPatch.values())
 		{
@@ -1891,6 +1960,7 @@ public class HerbRunPlugin extends Plugin
 		settings.put("payGardeners", config.payGardeners());
 		settings.put("useCompost", config.useCompost());
 		settings.put("onlyReady", config.onlyReady());
+		settings.put("keepRunsSeparate", config.keepRunsSeparate());
 		settings.put("activeTimersOnly", config.activeTimersOnly());
 		settings.put("profitFirst", config.profitFirst());
 		settings.put("plantContract", config.plantContract());

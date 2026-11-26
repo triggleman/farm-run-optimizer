@@ -18,7 +18,7 @@ final class RunStatus
 	long soonestLeft = -1;
 	/** Time until the last growing patch is ready (when the whole run is ready), or -1. */
 	long lastLeft = -1;
-	/** How far the next-ready patch has grown, 0 to 1 (1 when something is ready). */
+	/** How far the run has grown towards its last patch being ready, 0 to 1 (1 only when all are ready). */
 	double progress;
 
 	private RunStatus(PatchType type)
@@ -30,7 +30,7 @@ final class RunStatus
 		java.util.function.Function<FarmPatch, PatchTimers.Status> status, long now)
 	{
 		RunStatus r = new RunStatus(type);
-		double bestProgress = 0;
+		double lastProgress = 0;
 		for (FarmPatch p : patches)
 		{
 			if (p.getType() != type)
@@ -50,10 +50,14 @@ final class RunStatus
 				if (r.soonestLeft < 0 || left < r.soonestLeft)
 				{
 					r.soonestLeft = left;
-					long total = Math.max(1, pl.readyAtMillis() - pl.plantedAtMillis);
-					bestProgress = Math.min(1, Math.max(0, 1 - (double) left / total));
 				}
-				r.lastLeft = Math.max(r.lastLeft, left);
+				if (left > r.lastLeft)
+				{
+					// The bar follows the patch that will be ready last.
+					r.lastLeft = left;
+					long total = Math.max(1, pl.readyAtMillis() - pl.plantedAtMillis);
+					lastProgress = Math.min(1, Math.max(0, 1 - (double) left / total));
+				}
 				continue;
 			}
 			PatchTimers.Status st = status.apply(p);
@@ -67,7 +71,7 @@ final class RunStatus
 				r.ready++; // diseased, dead or a stump: needs a visit
 			}
 		}
-		r.progress = r.ready > 0 ? 1 : bestProgress;
+		r.progress = r.allReady() ? 1 : lastProgress;
 		return r;
 	}
 
@@ -77,27 +81,34 @@ final class RunStatus
 		return tracked > 0 && ready == tracked;
 	}
 
-	/** Short text: "5/7 ready", "15m 29s", "growing" or "" (nothing planted). */
+	/**
+	 * Short text: "7/7 ready" when the whole run is ready, "5/7 · 14m 59s" while some still grow
+	 * (time until the last one), "1h 59m" when none are ready yet, "growing", or "" (nothing planted).
+	 */
 	String shortText()
 	{
-		if (ready > 0)
+		if (allReady())
 		{
 			return ready + "/" + tracked + " ready";
 		}
-		if (soonestLeft >= 0)
+		if (ready > 0)
 		{
-			return PatchTimers.formatDuration(soonestLeft);
+			return ready + "/" + tracked + (lastLeft >= 0 ? " \u00b7 " + PatchTimers.formatDuration(lastLeft) : " ready");
+		}
+		if (lastLeft >= 0)
+		{
+			return PatchTimers.formatDuration(lastLeft);
 		}
 		return tracked > 0 ? "growing" : "";
 	}
 
-	/** For sorting "Next up": ready runs first, then by time left, then runs with nothing timed. */
+	/** For sorting "Next up": fully ready runs first, then by time until the whole run is ready. */
 	long sortKey()
 	{
-		if (ready > 0)
+		if (allReady())
 		{
 			return -1;
 		}
-		return soonestLeft >= 0 ? soonestLeft : Long.MAX_VALUE;
+		return lastLeft >= 0 ? lastLeft : Long.MAX_VALUE;
 	}
 }

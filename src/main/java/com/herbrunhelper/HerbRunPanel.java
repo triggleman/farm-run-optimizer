@@ -50,7 +50,7 @@ import net.runelite.client.util.ImageUtil;
 public class HerbRunPanel extends PluginPanel
 {
 	/** Shown in the footer so it's easy to tell which build is running. */
-	static final String VERSION = "1.21.0";
+	static final String VERSION = "1.21.1";
 	private static final String CREDIT = "<html><center>Made by ToadFx<br>v" + VERSION + "</center></html>";
 
 	private static final Color GREEN = new Color(90, 200, 90);
@@ -458,15 +458,9 @@ public class HerbRunPanel extends PluginPanel
 	/** "Herbs  5/7 ready" or "Trees  5h 04m", with a bar showing how far it has grown. */
 	private JComponent nextUpRow(RunStatus r)
 	{
-		Color color = r.ready > 0 ? GREEN : r.soonestLeft >= 0 ? YELLOW : MUTED;
-		String text = r.ready > 0 ? "\u2713 " + r.shortText() : r.shortText();
-		String tip = r.ready > 0
-			? r.ready + " of " + r.tracked + " patches need you"
-				+ (r.soonestLeft >= 0 ? " (next one in " + PatchTimers.formatDuration(r.soonestLeft) + ")" : "")
-			: r.soonestLeft >= 0
-				? "Next patch ready in " + PatchTimers.formatDuration(r.soonestLeft)
-					+ (r.lastLeft > r.soonestLeft ? ", all " + r.tracked + " in " + PatchTimers.formatDuration(r.lastLeft) : "")
-				: "Growing (no timer yet: it starts when you plant or pass by)";
+		Color color = r.allReady() ? GREEN : r.tracked > 0 ? YELLOW : MUTED;
+		String text = r.allReady() ? "\u2713 " + r.shortText() : r.shortText();
+		String tip = runTip(r);
 		Column c = new Column();
 		JPanel top = row(label(r.type.getDisplayName(), Color.WHITE, false), label(text, color, false));
 		top.setToolTipText(tip);
@@ -477,7 +471,26 @@ public class HerbRunPanel extends PluginPanel
 		return c;
 	}
 
-	/** A thin bar: how far the next patch of a run has grown. */
+	/** Hover text: how many are ready and when the rest (and the whole run) will be. */
+	private static String runTip(RunStatus r)
+	{
+		if (r.allReady())
+		{
+			return "All " + r.tracked + " patches are ready";
+		}
+		String rest = r.lastLeft >= 0 ? "whole run ready in " + PatchTimers.formatDuration(r.lastLeft) : "rest still growing";
+		if (r.ready > 0)
+		{
+			return r.ready + " of " + r.tracked + " ready, " + rest;
+		}
+		if (r.soonestLeft >= 0)
+		{
+			return "Next patch in " + PatchTimers.formatDuration(r.soonestLeft) + ", " + rest;
+		}
+		return "Growing (no timer yet: it starts when you plant or pass by)";
+	}
+
+	/** A thin bar: how far the run has grown towards its last patch being ready. */
 	private static final class ProgressBar extends JComponent
 	{
 		private final double value;
@@ -514,9 +527,8 @@ public class HerbRunPanel extends PluginPanel
 			RunStatus r = RunStatus.of(type, patchesOfType(type, planted), planted, timers::getStatus, now);
 			String text = r.shortText();
 			label.setText(text.isEmpty() ? "on" : text);
-			label.setForeground(r.ready > 0 ? GREEN : r.soonestLeft >= 0 ? YELLOW : GREEN);
-			label.setToolTipText(r.ready > 0 ? r.ready + " of " + r.tracked + " patches need you"
-				: r.soonestLeft >= 0 ? "Next patch ready in " + PatchTimers.formatDuration(r.soonestLeft) : null);
+			label.setForeground(r.allReady() || r.tracked == 0 ? GREEN : YELLOW);
+			label.setToolTipText(r.tracked == 0 ? null : runTip(r));
 		});
 	}
 

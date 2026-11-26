@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.21.1 (2026-11-26)
+- **Green means the whole run is ready.** A run's "Next up" bar and header only turn green when its last patch is ready. While some patches are still growing they stay yellow and show how many are ready plus the time until the last one ("5/7 · 14m 59s"). The bar now fills towards the whole run being ready, not the first patch, and "Next up" is sorted the same way.
+
 ## 1.21.0 (2026-11-26)
 - **Countdown on every run's header.** In the Runs section, each run you do shows its live status without opening it: "5/7 ready" in green or the time until the next patch ("59m 59s", "1h 59m") in yellow. Hover for details.
 - **"Next up" at the top of the panel.** Replaces the old summary: every run you do, soonest first, with a progress bar of how far it has grown. Ready runs sit on top with a full green bar. Hover a run to see when the next patch and the whole run will be ready.
